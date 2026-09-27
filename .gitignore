@@ -1,0 +1,10 @@
+# Godot
+.godot/
+*.import.tmp
+export/
+build/
+
+# Logs und Auswertung
+logs/
+analysis/report.html
+__pycache__/
