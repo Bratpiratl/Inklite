@@ -1,0 +1,43 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://ui/hud.gd" id="1_hud"]
+
+[node name="Hud" type="HBoxContainer"]
+custom_minimum_size = Vector2(0, 32)
+theme_override_constants/separation = 4
+script = ExtResource("1_hud")
+
+[node name="LivesLabel" type="Label" parent="."]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(1, 0.462745, 0.462745, 1)
+theme_override_font_sizes/font_size = 15
+text = "Leben 5"
+
+[node name="WinsLabel" type="Label" parent="."]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0.92549, 0.827451, 0.576471, 1)
+theme_override_font_sizes/font_size = 15
+text = "Siege 0/10"
+horizontal_alignment = 1
+
+[node name="GoldLabel" type="Label" parent="."]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(1, 0.831373, 0.380392, 1)
+theme_override_font_sizes/font_size = 15
+text = "Gold 0"
+horizontal_alignment = 1
+
+[node name="RoundLabel" type="Label" parent="."]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0.678431, 0.647059, 0.768627, 1)
+theme_override_font_sizes/font_size = 15
+text = "Runde 1"
+horizontal_alignment = 2

@@ -1,0 +1,74 @@
+extends Node
+## Autoload: hält den laufenden Run zwischen den Szenen und speichert ihn lokal.
+## Die Spiellogik steckt in RunState, hier wird nur verwaltet, gespeichert und navigiert.
+
+const SAVE_PATH := "user://run.json"
+const SAVE_VERSION := 1
+const GHOSTS_PATH := "res://data/ghost_teams.json"
+const TITLE_SCENE := "res://ui/main.tscn"
+const SHOP_SCENE := "res://ui/shop.tscn"
+const BATTLE_SCENE := "res://ui/battle_view.tscn"
+
+var db: MonsterDb
+var balance: Dictionary
+var ghosts: Array = []
+var run: RunState
+var last_battle: Dictionary = {}
+var speed_index := 0
+
+
+func _ready() -> void:
+	db = MonsterDb.from_file()
+	balance = GameData.load_balance()
+	var data: Variant = GameData.load_json(GHOSTS_PATH)
+	if data is Dictionary:
+		ghosts = data.get("teams", [])
+
+
+func new_run() -> void:
+	# Der Seed selbst darf aus der Uhr kommen, alles danach läuft über GameRng.
+	var run_seed := absi(int(Time.get_unix_time_from_system() * 1000.0) ^ Time.get_ticks_usec()) % 2147483647
+	run = RunState.create(db, balance, ghosts, run_seed)
+	last_battle = {}
+	save()
+
+
+func has_save() -> bool:
+	return FileAccess.file_exists(SAVE_PATH)
+
+
+func load_run() -> bool:
+	var data: Variant = GameData.load_json(SAVE_PATH) if has_save() else null
+	if not (data is Dictionary) or int(data.get("version", 0)) != SAVE_VERSION:
+		return false
+	run = RunState.from_dict(data["run"], db, balance, ghosts)
+	return true
+
+
+func save() -> void:
+	if run == null:
+		return
+	var file := FileAccess.open(SAVE_PATH, FileAccess.WRITE)
+	if file == null:
+		push_error("Spielstand nicht speicherbar: %s" % FileAccess.get_open_error())
+		return
+	file.store_string(JSON.stringify({"version": SAVE_VERSION, "run": run.to_dict()}))
+	file.close()
+
+
+func clear_save() -> void:
+	if has_save():
+		DirAccess.remove_absolute(SAVE_PATH)
+
+
+## Kampf wird sofort ausgewertet und gespeichert, die Kampfansicht spielt ihn nur noch ab.
+func fight() -> void:
+	last_battle = run.fight()
+	if run.is_over():
+		clear_save()
+	else:
+		save()
+
+
+func goto(scene_path: String) -> void:
+	get_tree().change_scene_to_file.call_deferred(scene_path)

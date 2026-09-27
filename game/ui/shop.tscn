@@ -1,0 +1,152 @@
+[gd_scene load_steps=8 format=3]
+
+[ext_resource type="Script" path="res://ui/shop.gd" id="1_shop"]
+[ext_resource type="PackedScene" path="res://ui/hud.tscn" id="2_hud"]
+[ext_resource type="PackedScene" path="res://ui/board.tscn" id="3_board"]
+[ext_resource type="Texture2D" path="res://assets/sprites/tiles/floor_player.png" id="4_floor"]
+[ext_resource type="Script" path="res://ui/drop_zone.gd" id="5_drop"]
+
+[sub_resource type="LabelSettings" id="caption"]
+font_size = 12
+font_color = Color(0.678431, 0.647059, 0.768627, 1)
+
+[sub_resource type="StyleBoxFlat" id="sell_style"]
+bg_color = Color(0.45098, 0.160784, 0.180392, 0.95)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(1, 0.462745, 0.462745, 1)
+corner_radius_top_left = 6
+corner_radius_top_right = 6
+corner_radius_bottom_right = 6
+corner_radius_bottom_left = 6
+
+[node name="Shop" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_shop")
+
+[node name="Background" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0.105882, 0.0901961, 0.14902, 1)
+
+[node name="Margin" type="MarginContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 12
+theme_override_constants/margin_top = 8
+theme_override_constants/margin_right = 12
+theme_override_constants/margin_bottom = 12
+
+[node name="Layout" type="VBoxContainer" parent="Margin"]
+layout_mode = 2
+theme_override_constants/separation = 6
+
+[node name="Hud" parent="Margin/Layout" instance=ExtResource("2_hud")]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="TopSpacer" type="Control" parent="Margin/Layout"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="FrontCaption" type="Label" parent="Margin/Layout"]
+layout_mode = 2
+text = "vorne: wird zuerst getroffen"
+label_settings = SubResource("caption")
+horizontal_alignment = 1
+
+[node name="Board" parent="Margin/Layout" instance=ExtResource("3_board")]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 4
+interactive = true
+floor_texture = ExtResource("4_floor")
+
+[node name="InfoLabel" type="Label" parent="Margin/Layout"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 58)
+layout_mode = 2
+theme_override_colors/font_color = Color(0.878431, 0.858824, 0.929412, 1)
+theme_override_font_sizes/font_size = 13
+text = "Info"
+horizontal_alignment = 1
+vertical_alignment = 1
+autowrap_mode = 3
+
+[node name="BottomSpacer" type="Control" parent="Margin/Layout"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="BottomArea" type="MarginContainer" parent="Margin/Layout"]
+layout_mode = 2
+
+[node name="ShopArea" type="VBoxContainer" parent="Margin/Layout/BottomArea"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="ShopCaption" type="Label" parent="Margin/Layout/BottomArea/ShopArea"]
+layout_mode = 2
+text = "Shop"
+label_settings = SubResource("caption")
+horizontal_alignment = 1
+
+[node name="Cards" type="HBoxContainer" parent="Margin/Layout/BottomArea/ShopArea"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_constants/separation = 6
+alignment = 1
+
+[node name="Buttons" type="HBoxContainer" parent="Margin/Layout/BottomArea/ShopArea"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="RerollButton" type="Button" parent="Margin/Layout/BottomArea/ShopArea/Buttons"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 56)
+layout_mode = 2
+size_flags_horizontal = 3
+focus_mode = 0
+theme_override_font_sizes/font_size = 17
+text = "Neu würfeln (1)"
+
+[node name="FightButton" type="Button" parent="Margin/Layout/BottomArea/ShopArea/Buttons"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 56)
+layout_mode = 2
+size_flags_horizontal = 3
+focus_mode = 0
+theme_override_font_sizes/font_size = 19
+text = "Kampf!"
+
+[node name="SellZone" type="PanelContainer" parent="Margin/Layout/BottomArea"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+theme_override_styles/panel = SubResource("sell_style")
+script = ExtResource("5_drop")
+
+[node name="SellLabel" type="Label" parent="Margin/Layout/BottomArea/SellZone"]
+unique_name_in_owner = true
+layout_mode = 2
+mouse_filter = 2
+theme_override_font_sizes/font_size = 17
+text = "Hier ablegen zum Verkaufen"
+horizontal_alignment = 1
+vertical_alignment = 1

@@ -1,9 +1,9 @@
 extends Control
-## Spielt die Ereignisliste aus CombatSim ab. Rechnet selbst nichts aus: Werte kommen
-## ausschließlich aus den Ereignissen. Eigenes Team ist Seite 0 (unten), Gegner Seite 1 (oben).
+## Spielt die Ereignisliste des letzten Kampfes (Session.last_battle) ab. Rechnet selbst nichts aus:
+## Werte kommen ausschließlich aus den Ereignissen. Eigenes Team ist Seite 0 (unten), Gegner Seite 1.
 
-const DEMO_TEAMS_PATH := "res://data/demo_teams.json"
 const SPEEDS: Array[float] = [1.0, 2.0]
+const SKIP_SPEED := 1000.0
 
 # Abspieldauern in Sekunden bei 1x.
 const T_START := 0.6
@@ -28,23 +28,29 @@ const FLASH_ABILITY := Color(1.8, 1.6, 0.6)
 @onready var _enemy_board: Board = %EnemyBoard
 @onready var _player_board: Board = %PlayerBoard
 @onready var _fx: Control = %FxLayer
+@onready var _title: Label = %Title
 @onready var _tick_label: Label = %TickLabel
 @onready var _result_label: Label = %ResultLabel
+@onready var _outcome_label: Label = %OutcomeLabel
+@onready var _continue_button: Button = %ContinueButton
+@onready var _replay_button: Button = %ReplayButton
 @onready var _speed_button: Button = %SpeedButton
 
-var _db := MonsterDb.from_file()
-var _sim := CombatSim.new(_db, GameData.load_balance().get("combat", {}))
-var _teams: Dictionary = GameData.load_json(DEMO_TEAMS_PATH)
-var _seed := 1
-var _speed_index := 0
+var _battle: Dictionary
+var _db: MonsterDb
 var _generation := 0  # Jeder Neustart erhöht das, laufende Wiedergaben brechen dann ab.
+var _playing := false
+var _skipping := false
 
 
 func _ready() -> void:
-	%NewButton.pressed.connect(func() -> void:
-		_seed += 1
-		_start())
-	%ReplayButton.pressed.connect(_start)
+	_battle = Session.last_battle
+	_db = Session.db
+	if _battle.is_empty():
+		Session.goto(Session.TITLE_SCENE)
+		return
+	_continue_button.pressed.connect(_on_continue)
+	_replay_button.pressed.connect(_start)
 	_speed_button.pressed.connect(_toggle_speed)
 	_update_speed_button()
 	_start.call_deferred()
@@ -52,32 +58,50 @@ func _ready() -> void:
 
 func _start() -> void:
 	_generation += 1
+	_skipping = false
 	for child in _fx.get_children():
 		child.queue_free()
 	_enemy_board.clear()
 	_player_board.clear()
 	_result_label.text = ""
-	var result := _sim.simulate(_teams["player"], _teams["enemy"], _seed)
-	_play(result["events"], _generation)
+	_outcome_label.text = ""
+	_title.text = "Runde %d" % _battle["round"]
+	_play(_battle["events"], _generation)
 
 
 func _play(events: Array, generation: int) -> void:
+	_set_playing(true)
 	for event: Dictionary in events:
 		if generation != _generation or not is_inside_tree():
 			return
 		await _play_event(event)
+	if generation == _generation:
+		_set_playing(false)
+
+
+func _set_playing(value: bool) -> void:
+	_playing = value
+	_continue_button.text = "Überspringen" if value else "Weiter"
+	_replay_button.disabled = value
+
+
+func _on_continue() -> void:
+	if _playing:
+		_skipping = true
+		return
+	Session.goto(Session.TITLE_SCENE if Session.run.is_over() else Session.SHOP_SCENE)
 
 
 func _play_event(e: Dictionary) -> void:
 	match e["ev"]:
 		"start":
-			_tick_label.text = "Seed %d" % _seed
+			_tick_label.text = ""
 			for unit: Dictionary in e["units"]:
 				var def := _db.get_def(unit["id"])
-				_cell(unit["side"], unit["slot"]).show_unit(def["sprite"], unit["hp"], unit["atk"], unit["side"] == 1)
+				_cell(unit["side"], unit["slot"]).show_unit(def["sprite"], unit["hp"], unit["atk"], unit["level"], unit["side"] == 1)
 			await _wait(T_START)
 		"tick":
-			_tick_label.text = "Runde %d" % e["t"]
+			_tick_label.text = "Zug %d" % e["t"]
 			await _wait(T_TICK)
 		"attack":
 			var direction := -1.0 if e["side"] == 0 else 1.0
@@ -116,19 +140,30 @@ func _play_event(e: Dictionary) -> void:
 
 
 func _show_result(winner: int) -> void:
+	var run := Session.run
 	match winner:
 		0:
-			_result_label.text = "Sieg!"
-			_result_label.add_theme_color_override("font_color", COLOR_POISON)
+			_set_result("Sieg!", COLOR_POISON)
 		1:
-			_result_label.text = "Niederlage"
-			_result_label.add_theme_color_override("font_color", COLOR_DAMAGE)
+			_set_result("Niederlage", COLOR_DAMAGE)
 		_:
-			_result_label.text = "Unentschieden"
-			_result_label.add_theme_color_override("font_color", COLOR_ABILITY)
+			_set_result("Unentschieden", COLOR_ABILITY)
+	if run.is_victory():
+		_outcome_label.text = "Run gewonnen! %d Siege, %d Leben übrig." % [run.wins, run.lives]
+	elif run.is_over():
+		_outcome_label.text = "Keine Leben mehr. Run vorbei mit %d Siegen." % run.wins
+	else:
+		_outcome_label.text = "Siege %d/%d, Leben %d" % [run.wins, run.wins_to_victory(), run.lives]
+
+
+func _set_result(text: String, color: Color) -> void:
+	_result_label.text = text
+	_result_label.add_theme_color_override("font_color", color)
 
 
 func _float_text(cell: UnitCell, text: String, color: Color) -> void:
+	if _skipping:
+		return
 	var label := Label.new()
 	label.text = text
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -152,17 +187,20 @@ func _cell(side: int, slot: int) -> UnitCell:
 
 
 func _speed() -> float:
-	return SPEEDS[_speed_index]
+	return SKIP_SPEED if _skipping else SPEEDS[Session.speed_index]
 
 
 func _toggle_speed() -> void:
-	_speed_index = (_speed_index + 1) % SPEEDS.size()
+	Session.speed_index = (Session.speed_index + 1) % SPEEDS.size()
 	_update_speed_button()
 
 
 func _update_speed_button() -> void:
-	_speed_button.text = "%dx" % int(_speed())
+	_speed_button.text = "%dx" % int(SPEEDS[Session.speed_index])
 
 
+## Beim Überspringen kehrt die Funktion ohne await zurück, der Rest läuft dann im selben Frame durch.
 func _wait(seconds: float) -> void:
+	if _skipping:
+		return
 	await get_tree().create_timer(seconds / _speed()).timeout

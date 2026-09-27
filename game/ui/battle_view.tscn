@@ -48,17 +48,18 @@ theme_override_constants/separation = 4
 layout_mode = 2
 
 [node name="Title" type="Label" parent="Margin/Layout/Header"]
+unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_colors/font_color = Color(0.92549, 0.827451, 0.576471, 1)
 theme_override_font_sizes/font_size = 20
-text = "Inklite"
+text = "Runde 1"
 
 [node name="TickLabel" type="Label" parent="Margin/Layout/Header"]
 unique_name_in_owner = true
 layout_mode = 2
 theme_override_colors/font_color = Color(0.678431, 0.647059, 0.768627, 1)
-text = "Runde 0"
+text = ""
 
 [node name="TopSpacer" type="Control" parent="Margin/Layout"]
 layout_mode = 2
@@ -99,6 +100,16 @@ text = "Dein Team"
 label_settings = SubResource("caption")
 horizontal_alignment = 1
 
+[node name="OutcomeLabel" type="Label" parent="Margin/Layout"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 40)
+layout_mode = 2
+theme_override_colors/font_color = Color(0.878431, 0.858824, 0.929412, 1)
+theme_override_font_sizes/font_size = 14
+horizontal_alignment = 1
+vertical_alignment = 1
+autowrap_mode = 3
+
 [node name="BottomSpacer" type="Control" parent="Margin/Layout"]
 layout_mode = 2
 size_flags_vertical = 3
@@ -107,18 +118,20 @@ size_flags_vertical = 3
 layout_mode = 2
 theme_override_constants/separation = 8
 
-[node name="NewButton" type="Button" parent="Margin/Layout/ButtonBar"]
+[node name="ContinueButton" type="Button" parent="Margin/Layout/ButtonBar"]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 56)
 layout_mode = 2
 size_flags_horizontal = 3
+focus_mode = 0
 theme_override_font_sizes/font_size = 18
-text = "Neuer Kampf"
+text = "Überspringen"
 
 [node name="ReplayButton" type="Button" parent="Margin/Layout/ButtonBar"]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(96, 56)
 layout_mode = 2
+focus_mode = 0
 theme_override_font_sizes/font_size = 18
 text = "Nochmal"
 
@@ -126,6 +139,7 @@ text = "Nochmal"
 unique_name_in_owner = true
 custom_minimum_size = Vector2(64, 56)
 layout_mode = 2
+focus_mode = 0
 theme_override_font_sizes/font_size = 18
 text = "1x"
 
