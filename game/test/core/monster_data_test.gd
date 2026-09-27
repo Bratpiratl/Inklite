@@ -2,8 +2,8 @@ extends GdUnitTestSuite
 ## Prüft data/monsters.json gegen den MVP-Umfang aus PLAN.md.
 
 const TRIGGERS := ["battle_start", "on_attack", "on_hurt", "on_death"]
-const EFFECTS := ["poison", "shield", "damage"]
-const TARGETS := ["self", "target", "attacker", "allies_all", "allies_row", "enemies_all", "enemies_front", "enemy_front", "enemy_random"]
+const EFFECTS := ["poison", "shield", "damage", "buff_atk", "buff_hp"]
+const TARGETS := ["self", "target", "attacker", "allies_all", "allies_row", "allies_front", "ally_random", "enemies_all", "enemies_front", "enemy_front", "enemy_random"]
 
 
 func _defs() -> Array:

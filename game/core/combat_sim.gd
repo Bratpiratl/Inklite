@@ -7,7 +7,9 @@ extends RefCounted
 ## in Slot-Reihenfolge und pro Slot erst die Seite mit Vorzug. Der Vorzug wechselt jeden Tick.
 ## Am Tickende wirkt Gift. Ende, sobald eine Seite leer ist, sonst nach max_ticks unentschieden.
 ##
-## Team-Format: Array von {"id": String, "level": int, "slot": int}.
+## Team-Format: Array von {"id": String, "level": int, "slot": int, optional "atk_bonus", "hp_bonus"}.
+## Team-Fähigkeiten (Trainer, Trinkets) je Seite: Array von TeamAbility-Dictionaries mit "id".
+## Sie feuern nach den Fähigkeiten der Monster, wenn ihr "when"-Filter zum auslösenden Monster passt.
 ## Ergebnis: {"winner": 0 | 1 | DRAW, "ticks": int, "events": Array[Dictionary]}.
 
 const ROWS := 3
@@ -19,6 +21,9 @@ const TRIGGER_BATTLE_START := "battle_start"
 const TRIGGER_ON_ATTACK := "on_attack"
 const TRIGGER_ON_HURT := "on_hurt"
 const TRIGGER_ON_DEATH := "on_death"
+## Auslöser, bei denen Team-Fähigkeiten auf ein bestimmtes Monster reagieren.
+## battle_start feuert für das Team genau einmal, siehe simulate().
+const UNIT_TRIGGERS := [TRIGGER_ON_ATTACK, TRIGGER_ON_HURT, TRIGGER_ON_DEATH]
 
 var rules: Dictionary
 
@@ -27,6 +32,7 @@ var _rng: GameRng
 var _units: Array = []  # [seite] -> Array mit SLOTS Einträgen (CombatUnit oder null)
 var _events: Array[Dictionary] = []
 var _queue: Array[Dictionary] = []
+var _mods: Array = [[], []]  # [seite] -> Team-Fähigkeiten
 var _tick := 0
 
 
@@ -35,11 +41,12 @@ func _init(db: MonsterDb, combat_rules: Dictionary) -> void:
 	rules = combat_rules
 
 
-func simulate(team_a: Array, team_b: Array, seed_value: int) -> Dictionary:
+func simulate(team_a: Array, team_b: Array, seed_value: int, mods_a: Array = [], mods_b: Array = []) -> Dictionary:
 	_rng = GameRng.new(seed_value)
 	_events = []
 	_queue = []
 	_tick = 0
+	_mods = [mods_a, mods_b]
 	_units = [_build_side(0, team_a), _build_side(1, team_b)]
 
 	var start_units: Array[Dictionary] = []
@@ -47,8 +54,13 @@ func simulate(team_a: Array, team_b: Array, seed_value: int) -> Dictionary:
 		start_units.append(unit.snapshot())
 	emit({"ev": "start", "seed": seed_value, "units": start_units})
 
+	for side in 2:
+		for mod: Dictionary in _mods[side]:
+			if mod.get("trigger", "") == TRIGGER_BATTLE_START:
+				_fire_ability(_team_source(side), TRIGGER_BATTLE_START, mod, {})
+				_drain_queue()
 	for unit in _all_in_order(0):
-		_fire(unit, TRIGGER_BATTLE_START, {})
+		_trigger(unit, TRIGGER_BATTLE_START, {})
 		_drain_queue()
 	if not _is_over():
 		var max_ticks: int = rules.get("max_ticks", 1)
@@ -74,9 +86,10 @@ func kill(unit: CombatUnit) -> void:
 	queue_trigger(unit, TRIGGER_ON_DEATH, {})
 
 
+## Merkt die eigene Fähigkeit des Monsters und passende Team-Fähigkeiten seiner Seite vor.
 func queue_trigger(unit: CombatUnit, trigger: String, context: Dictionary) -> void:
-	if unit.ability.get("trigger", "") == trigger:
-		_queue.append({"unit": unit, "trigger": trigger, "context": context})
+	for ability in _abilities_for(unit, trigger):
+		_queue.append({"unit": unit, "trigger": trigger, "context": context, "ability": ability})
 
 
 func _run_tick() -> void:
@@ -105,21 +118,46 @@ func _attack(attacker: CombatUnit) -> void:
 		return
 	emit({"ev": "attack", "side": attacker.side, "slot": attacker.slot, "to_side": target.side, "to_slot": target.slot})
 	Effects.deal_damage(self, attacker, target, attacker.atk, Effects.KIND_ATTACK)
-	_fire(attacker, TRIGGER_ON_ATTACK, {"target": target})
+	_trigger(attacker, TRIGGER_ON_ATTACK, {"target": target})
 
 
-func _fire(unit: CombatUnit, trigger: String, context: Dictionary) -> void:
-	var ability := unit.ability
-	if ability.get("trigger", "") != trigger:
-		return
+## Löst sofort aus: erst die eigene Fähigkeit, dann Team-Fähigkeiten der Seite.
+func _trigger(unit: CombatUnit, trigger: String, context: Dictionary) -> void:
+	for ability in _abilities_for(unit, trigger):
+		_fire_ability(unit, trigger, ability, context)
+
+
+func _abilities_for(unit: CombatUnit, trigger: String) -> Array[Dictionary]:
+	var result: Array[Dictionary] = []
+	if unit.ability.get("trigger", "") == trigger:
+		result.append(unit.ability)
+	if unit.slot >= 0 and UNIT_TRIGGERS.has(trigger):
+		for mod: Dictionary in _mods[unit.side]:
+			if mod.get("trigger", "") == trigger and TeamAbility.matches(mod.get("when"), unit.type, unit.row()):
+				result.append(mod)
+	return result
+
+
+func _fire_ability(unit: CombatUnit, trigger: String, ability: Dictionary, context: Dictionary) -> void:
 	# Nur on_death wirkt noch aus dem Grab.
 	if not unit.alive and trigger != TRIGGER_ON_DEATH:
 		return
-	var targets := _resolve_targets(unit, ability.get("target", ""), context)
+	var targets := _resolve_targets(unit, ability.get("target", ""), context, ability.get("only"))
 	if targets.is_empty():
 		return
-	emit({"ev": "ability", "side": unit.side, "slot": unit.slot, "trigger": trigger, "effect": ability["effect"]})
+	emit({
+		"ev": "ability", "side": unit.side, "slot": unit.slot, "trigger": trigger,
+		"effect": ability["effect"], "source": ability.get("id", ""),
+	})
 	Effects.apply(self, ability["effect"], int(ability.get("value", 0)), unit, targets)
+
+
+## Stellvertreter für Team-Fähigkeiten ohne auslösendes Monster (Kampfstart). Slot -1.
+func _team_source(side: int) -> CombatUnit:
+	var unit := CombatUnit.new()
+	unit.side = side
+	unit.slot = -1
+	return unit
 
 
 ## Ausgelöste Fähigkeiten (on_hurt, on_death) laufen erst nach der aktuellen Aktion,
@@ -127,10 +165,11 @@ func _fire(unit: CombatUnit, trigger: String, context: Dictionary) -> void:
 func _drain_queue() -> void:
 	while not _queue.is_empty():
 		var entry: Dictionary = _queue.pop_front()
-		_fire(entry["unit"], entry["trigger"], entry["context"])
+		_fire_ability(entry["unit"], entry["trigger"], entry["ability"], entry["context"])
 
 
-func _resolve_targets(source: CombatUnit, target_rule: String, context: Dictionary) -> Array[CombatUnit]:
+## only: optionaler Filter (siehe TeamAbility). Er grenzt die Auswahl ein, bevor gezogen wird.
+func _resolve_targets(source: CombatUnit, target_rule: String, context: Dictionary, only: Variant = null) -> Array[CombatUnit]:
 	var result: Array[CombatUnit] = []
 	var enemy_side := 1 - source.side
 	match target_rule:
@@ -146,28 +185,50 @@ func _resolve_targets(source: CombatUnit, target_rule: String, context: Dictiona
 			for unit in _living(source.side):
 				if unit.row() == source.row():
 					result.append(unit)
+		"allies_front":
+			result = _front_row_units(source.side)
+		"ally_random":
+			var unit: CombatUnit = _rng.pick(_filtered(_living(source.side), only))
+			if unit != null:
+				result.append(unit)
 		"enemies_all":
 			result = _living(enemy_side)
 		"enemies_front":
-			var front := _front_row(enemy_side)
-			for unit in _living(enemy_side):
-				if unit.row() == front:
-					result.append(unit)
+			result = _front_row_units(enemy_side)
 		"enemy_front":
 			var unit := _front_target(enemy_side, source.col())
 			if unit != null:
 				result.append(unit)
 		"enemy_random":
-			var unit: CombatUnit = _rng.pick(_living(enemy_side))
+			var unit: CombatUnit = _rng.pick(_filtered(_living(enemy_side), only))
 			if unit != null:
 				result.append(unit)
 		_:
 			push_error("Unbekanntes Ziel: %s" % target_rule)
 	var alive: Array[CombatUnit] = []
-	for unit in result:
+	for unit in _filtered(result, only):
 		if unit.alive:
 			alive.append(unit)
 	return alive
+
+
+func _filtered(units: Array[CombatUnit], only: Variant) -> Array[CombatUnit]:
+	if not (only is Dictionary):
+		return units
+	var result: Array[CombatUnit] = []
+	for unit in units:
+		if TeamAbility.matches(only, unit.type, unit.row()):
+			result.append(unit)
+	return result
+
+
+func _front_row_units(side: int) -> Array[CombatUnit]:
+	var result: Array[CombatUnit] = []
+	var front := _front_row(side)
+	for unit in _living(side):
+		if unit.row() == front:
+			result.append(unit)
+	return result
 
 
 ## Vorderste besetzte Reihe, darin die Spalte, die dem Angreifer am nächsten liegt.
@@ -245,10 +306,11 @@ func _build_side(side: int, team: Array) -> Array:
 		unit.side = side
 		unit.slot = slot
 		unit.id = entry["id"]
+		unit.type = _db.get_def(unit.id).get("type", "")
 		unit.level = entry.get("level", 1)
-		unit.max_hp = stats["hp"]
+		unit.max_hp = int(stats["hp"]) + int(entry.get("hp_bonus", 0))
 		unit.hp = unit.max_hp
-		unit.atk = stats["atk"]
+		unit.atk = int(stats["atk"]) + int(entry.get("atk_bonus", 0))
 		var ability: Variant = stats.get("ability")
 		unit.ability = ability if ability is Dictionary else {}
 		slots[slot] = unit

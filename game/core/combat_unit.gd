@@ -5,6 +5,7 @@ extends RefCounted
 var side: int
 var slot: int
 var id: String
+var type: String
 var level: int
 var hp: int
 var max_hp: int
