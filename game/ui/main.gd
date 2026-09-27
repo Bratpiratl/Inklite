@@ -10,8 +10,7 @@ func _ready() -> void:
 
 
 func _on_new_run() -> void:
-	Session.new_run()
-	Session.goto(Session.SHOP_SCENE)
+	Session.goto(Session.TRAINER_SCENE)
 
 
 func _on_continue() -> void:

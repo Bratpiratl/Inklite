@@ -24,6 +24,8 @@ const FLASH_HIT := Color(2.2, 2.2, 2.2)
 const FLASH_POISON := Color(0.5, 1.8, 0.5)
 const FLASH_SHIELD := Color(0.7, 1.2, 2.2)
 const FLASH_ABILITY := Color(1.8, 1.6, 0.6)
+const COLOR_ITEM := Color(0.85, 0.7, 1)
+const T_ITEM := 0.35
 
 @onready var _enemy_board: Board = %EnemyBoard
 @onready var _player_board: Board = %PlayerBoard
@@ -66,6 +68,7 @@ func _start() -> void:
 	_result_label.text = ""
 	_outcome_label.text = ""
 	_title.text = "Runde %d" % _battle["round"]
+	_outcome_label.text = _round_end_text()
 	_play(_battle["events"], _generation)
 
 
@@ -130,8 +133,22 @@ func _play_event(e: Dictionary) -> void:
 			_float_text(cell, "+%d Schild" % e["amount"], COLOR_BLOCK)
 			await _wait(T_EFFECT)
 		"ability":
-			_cell(e["side"], e["slot"]).flash(FLASH_ABILITY, T_EFFECT / _speed())
-			await _wait(T_ABILITY)
+			var source: String = e.get("source", "")
+			if source == "":
+				_cell(e["side"], e["slot"]).flash(FLASH_ABILITY, T_EFFECT / _speed())
+				await _wait(T_ABILITY)
+			else:
+				# Trainer oder Trinket: Name über dem auslösenden Monster oder mittig über dem Raster.
+				var anchor: Control = _cell(e["side"], e["slot"]) if e["slot"] >= 0 else _board(e["side"])
+				_float_text(anchor, Session.item_def(source).get("name", source), COLOR_ITEM)
+				await _wait(T_ITEM)
+		"buff":
+			var cell := _cell(e["side"], e["slot"])
+			cell.set_atk(e["atk"])
+			cell.set_stats(e["hp"], cell.shield, cell.poison)
+			cell.flash(FLASH_ABILITY, T_EFFECT / _speed())
+			_float_text(cell, "+%d %s" % [e["amount"], "Angriff" if e["stat"] == "atk" else "HP"], COLOR_ABILITY)
+			await _wait(T_EFFECT)
 		"death":
 			_cell(e["side"], e["slot"]).die(T_DEATH / _speed())
 			await _wait(T_DEATH)
@@ -161,7 +178,7 @@ func _set_result(text: String, color: Color) -> void:
 	_result_label.add_theme_color_override("font_color", color)
 
 
-func _float_text(cell: UnitCell, text: String, color: Color) -> void:
+func _float_text(anchor: Control, text: String, color: Color) -> void:
 	if _skipping:
 		return
 	var label := Label.new()
@@ -173,8 +190,8 @@ func _float_text(cell: UnitCell, text: String, color: Color) -> void:
 	label.add_theme_constant_override("outline_size", 5)
 	label.add_theme_font_size_override("font_size", 16)
 	_fx.add_child(label)
-	label.size = Vector2(cell.size.x + 32, 22)
-	label.position = cell.global_position - _fx.global_position + Vector2(-16, 8)
+	label.size = Vector2(anchor.size.x + 32, 22)
+	label.position = anchor.global_position - _fx.global_position + Vector2(-16, anchor.size.y / 2.0 - 24)
 	var tween := label.create_tween().set_parallel()
 	var duration := T_FLOAT / _speed()
 	tween.tween_property(label, "position:y", label.position.y - FLOAT_RISE, duration)
@@ -183,7 +200,24 @@ func _float_text(cell: UnitCell, text: String, color: Color) -> void:
 
 
 func _cell(side: int, slot: int) -> UnitCell:
-	return (_player_board if side == 0 else _enemy_board).cell(slot)
+	return _board(side).cell(slot)
+
+
+func _board(side: int) -> Board:
+	return _player_board if side == 0 else _enemy_board
+
+
+## Was Trainer und Trinkets am Ende der Shop-Phase bewirkt haben.
+func _round_end_text() -> String:
+	var lines: Array[String] = []
+	for entry: Dictionary in _battle.get("round_end", []):
+		var monster_name := ""
+		if entry["slot"] >= 0:
+			for unit: Dictionary in _battle["events"][0]["units"]:
+				if unit["side"] == 0 and unit["slot"] == entry["slot"]:
+					monster_name = _db.get_def(unit["id"])["name"]
+		lines.append(AbilityText.round_end_line(entry, Session.item_def(entry["id"]).get("name", ""), monster_name))
+	return "\n".join(lines)
 
 
 func _speed() -> float:

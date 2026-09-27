@@ -1,10 +1,11 @@
-[gd_scene load_steps=8 format=3]
+[gd_scene load_steps=9 format=3]
 
 [ext_resource type="Script" path="res://ui/shop.gd" id="1_shop"]
 [ext_resource type="PackedScene" path="res://ui/hud.tscn" id="2_hud"]
 [ext_resource type="PackedScene" path="res://ui/board.tscn" id="3_board"]
 [ext_resource type="Texture2D" path="res://assets/sprites/tiles/floor_player.png" id="4_floor"]
 [ext_resource type="Script" path="res://ui/drop_zone.gd" id="5_drop"]
+[ext_resource type="Script" path="res://ui/choice_list.gd" id="6_list"]
 
 [sub_resource type="LabelSettings" id="caption"]
 font_size = 12
@@ -60,6 +61,12 @@ theme_override_constants/separation = 6
 [node name="Hud" parent="Margin/Layout" instance=ExtResource("2_hud")]
 unique_name_in_owner = true
 layout_mode = 2
+
+[node name="ItemBar" type="HBoxContainer" parent="Margin/Layout"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 48)
+layout_mode = 2
+theme_override_constants/separation = 6
 
 [node name="TopSpacer" type="Control" parent="Margin/Layout"]
 layout_mode = 2
@@ -150,3 +157,61 @@ theme_override_font_sizes/font_size = 17
 text = "Hier ablegen zum Verkaufen"
 horizontal_alignment = 1
 vertical_alignment = 1
+
+[node name="TrinketOverlay" type="Control" parent="."]
+unique_name_in_owner = true
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Dim" type="ColorRect" parent="TrinketOverlay"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.0588235, 0.0470588, 0.0901961, 0.92)
+
+[node name="Margin" type="MarginContainer" parent="TrinketOverlay"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 16
+theme_override_constants/margin_top = 16
+theme_override_constants/margin_right = 16
+theme_override_constants/margin_bottom = 16
+
+[node name="Layout" type="VBoxContainer" parent="TrinketOverlay/Margin"]
+layout_mode = 2
+theme_override_constants/separation = 12
+alignment = 1
+
+[node name="Title" type="Label" parent="TrinketOverlay/Margin/Layout"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.92549, 0.827451, 0.576471, 1)
+theme_override_font_sizes/font_size = 22
+text = "Wähle ein Trinket"
+horizontal_alignment = 1
+
+[node name="Hint" type="Label" parent="TrinketOverlay/Margin/Layout"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.678431, 0.647059, 0.768627, 1)
+theme_override_font_sizes/font_size = 13
+text = "Belohnung für deine Siege. Trinkets wirken den ganzen Run."
+horizontal_alignment = 1
+autowrap_mode = 3
+
+[node name="TrinketChoices" type="VBoxContainer" parent="TrinketOverlay/Margin/Layout"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_constants/separation = 10
+script = ExtResource("6_list")
+

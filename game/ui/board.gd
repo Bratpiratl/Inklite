@@ -48,7 +48,9 @@ func show_board(board: Array, db: MonsterDb) -> void:
 			_cells[slot].clear()
 			continue
 		var stats := db.level_stats(unit["id"], unit["level"])
-		_cells[slot].show_unit(db.get_def(unit["id"])["sprite"], stats["hp"], stats["atk"], unit["level"], is_enemy)
+		var hp := int(stats["hp"]) + int(unit.get("hp_bonus", 0))
+		var atk := int(stats["atk"]) + int(unit.get("atk_bonus", 0))
+		_cells[slot].show_unit(db.get_def(unit["id"])["sprite"], hp, atk, unit["level"], is_enemy)
 
 
 @warning_ignore("integer_division")

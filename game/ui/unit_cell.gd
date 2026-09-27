@@ -74,6 +74,10 @@ func set_stats(new_hp: int, new_shield: int, new_poison: int) -> void:
 	_poison_label.visible = poison > 0
 
 
+func set_atk(atk: int) -> void:
+	_atk_label.text = str(atk)
+
+
 ## Kurzer Sprung Richtung Gegner. direction: -1 nach oben, 1 nach unten.
 func jump(direction: float, duration: float) -> void:
 	var tween := _new_tween()
