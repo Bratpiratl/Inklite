@@ -13,7 +13,22 @@ static func load_json(path: String) -> Variant:
 	var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(path))
 	if parsed == null:
 		push_error("Kein gültiges JSON: %s" % path)
-	return parsed
+	return normalize_ints(parsed)
+
+
+## JSON kennt nur Float. Ganzzahlige Werte werden zu int, damit Anzeige ("3" statt "3.0")
+## und Vergleiche stimmen. Echte Kommazahlen bleiben Float.
+static func normalize_ints(value: Variant) -> Variant:
+	if value is float and is_equal_approx(value, roundf(value)) and absf(value) < 9.0e15:
+		return int(value)
+	if value is Array:
+		return value.map(normalize_ints)
+	if value is Dictionary:
+		var result := {}
+		for key: Variant in value:
+			result[key] = normalize_ints(value[key])
+		return result
+	return value
 
 
 static func load_balance() -> Dictionary:
