@@ -10,6 +10,8 @@ Nur Assets aus dieser Liste dürfen im Spiel verwendet werden.
 | assets/sprites/creatures/*.png | Kopien aus Tiny Creatures, umbenannt nach Monster-ID (Tabelle unten), schwarzer Hintergrund vom Rand aus transparent gemacht | CC0 |
 | assets/sprites/tiles/floor_player.png | Tiny Dungeon tile_0048 | CC0 |
 | assets/sprites/tiles/floor_enemy.png | Tiny Dungeon tile_0000 | CC0 |
+| assets/sprites/trainers/*.png | Kopien aus Tiny Dungeon (Tabelle unten) | CC0 |
+| assets/sprites/trinkets/*.png | Kopien aus Tiny Dungeon (Tabelle unten) | CC0 |
 
 Die kompletten Packs liegen in assets/packs/ (mit .gdignore, werden nicht importiert und nicht exportiert).
 Wer ein Sprite braucht, kopiert es nach assets/sprites/ und trägt es hier ein.
@@ -30,3 +32,17 @@ Wer ein Sprite braucht, kopiert es nach assets/sprites/ und trägt es hier ein.
 | bolt_bat | tile_0139 |
 | spark_ferret | tile_0177 |
 | storm_lynx | tile_0158 |
+
+## Trainer- und Trinket-Sprites (Tiny Dungeon)
+
+| Datei | Kachel |
+| --- | --- |
+| trainers/olm.png | tile_0111 |
+| trainers/asha.png | tile_0099 |
+| trinkets/oak_shield.png | tile_0102 |
+| trinkets/ember_elixir.png | tile_0115 |
+| trinkets/thorn_hammer.png | tile_0117 |
+| trinkets/throwing_axe.png | tile_0119 |
+| trinkets/soul_draught.png | tile_0116 |
+| trinkets/gold_chest.png | tile_0089 |
+

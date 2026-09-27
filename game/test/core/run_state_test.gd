@@ -210,3 +210,16 @@ func test_same_seed_same_run() -> void:
 	a.reroll()
 	b.reroll()
 	assert_array(a.offers).is_equal(b.offers)
+
+
+func test_ghost_round_lag_makes_opponents_come_from_earlier_rounds() -> void:
+	var ghosts := [
+		{"id": "r1", "round": 1, "team": []},
+		{"id": "r2", "round": 2, "team": []},
+	]
+	var run := _run(ghosts, {"ghost_round_lag": 1, "start_lives": 9, "wins_to_victory": 9})
+	run.board[0] = {"id": "cheap", "level": 1}
+	assert_str(run.fight()["ghost_id"]).is_equal("r1")
+	assert_str(run.fight()["ghost_id"]).is_equal("r1")
+	assert_str(run.fight()["ghost_id"]).is_equal("r2")
+

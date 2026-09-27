@@ -1,0 +1,14 @@
+[
+  {
+    "id": "olm",
+    "name": "Moorhüter Olm",
+    "sprite": "trainers/olm.png",
+    "ability": {"trigger": "on_attack", "when": {"type": "moos"}, "effect": "poison", "target": "target", "value": 1}
+  },
+  {
+    "id": "asha",
+    "name": "Funkenschmiedin Asha",
+    "sprite": "trainers/asha.png",
+    "ability": {"trigger": "round_end", "effect": "buff_atk", "target": "ally_random", "only": {"type": "blitz"}, "value": 1}
+  }
+]

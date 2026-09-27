@@ -5,7 +5,8 @@ extends GdUnitTestSuite
 func test_balance_has_run_rules() -> void:
 	var run: Dictionary = GameData.load_balance()["run"]
 	for key in ["start_lives", "wins_to_victory", "gold_per_round", "reroll_cost", "sell_value_by_level",
-			"merge_count", "shop_size_by_round", "rarity_weights_by_round"]:
+			"merge_count", "shop_size_by_round", "rarity_weights_by_round", "ghost_round_lag",
+			"trinket_every_wins", "trinket_choices"]:
 		assert_bool(run.has(key)).override_failure_message("balance.json/run fehlt: " + key).is_true()
 	for weights: Array in run["rarity_weights_by_round"]:
 		assert_int(weights.size()).is_equal(3)

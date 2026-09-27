@@ -1,0 +1,38 @@
+[
+  {
+    "id": "oak_shield",
+    "name": "Eichenschild",
+    "sprite": "trinkets/oak_shield.png",
+    "ability": {"trigger": "battle_start", "effect": "shield", "target": "allies_front", "value": 2}
+  },
+  {
+    "id": "ember_elixir",
+    "name": "Glutelixier",
+    "sprite": "trinkets/ember_elixir.png",
+    "ability": {"trigger": "battle_start", "effect": "buff_atk", "target": "allies_all", "only": {"type": "feuer"}, "value": 1}
+  },
+  {
+    "id": "thorn_hammer",
+    "name": "Dornenhammer",
+    "sprite": "trinkets/thorn_hammer.png",
+    "ability": {"trigger": "on_hurt", "when": {"row": 0}, "effect": "damage", "target": "attacker", "value": 1}
+  },
+  {
+    "id": "throwing_axe",
+    "name": "Wurfaxt",
+    "sprite": "trinkets/throwing_axe.png",
+    "ability": {"trigger": "on_attack", "when": {"row": 2}, "effect": "damage", "target": "target", "value": 1}
+  },
+  {
+    "id": "soul_draught",
+    "name": "Seelentrank",
+    "sprite": "trinkets/soul_draught.png",
+    "ability": {"trigger": "on_death", "effect": "buff_atk", "target": "allies_all", "value": 1}
+  },
+  {
+    "id": "gold_chest",
+    "name": "Goldtruhe",
+    "sprite": "trinkets/gold_chest.png",
+    "ability": {"trigger": "round_end", "effect": "gold", "value": 2}
+  }
+]

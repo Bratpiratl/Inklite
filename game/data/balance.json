@@ -19,7 +19,10 @@
       [60, 30, 10],
       [50, 35, 15],
       [40, 35, 25]
-    ]
+    ],
+    "ghost_round_lag": 0,
+    "trinket_every_wins": 2,
+    "trinket_choices": 3
   },
   "sim": {
     "team_budget": 12,
