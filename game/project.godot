@@ -1,0 +1,30 @@
+; Engine configuration file.
+; Godot 4.4.1 stable, fest gepinnt. Dieselbe Version steht in .github/workflows/deploy.yml.
+
+config_version=5
+
+[application]
+
+config/name="Inklite"
+run/main_scene="res://ui/main.tscn"
+config/features=PackedStringArray("4.4", "GL Compatibility")
+config/icon="res://icon.png"
+
+[display]
+
+window/size/viewport_width=360
+window/size/viewport_height=640
+window/handheld/orientation=1
+window/stretch/mode="canvas_items"
+window/stretch/aspect="expand"
+
+[input_devices]
+
+pointing/emulate_mouse_from_touch=true
+
+[rendering]
+
+renderer/rendering_method="gl_compatibility"
+renderer/rendering_method.mobile="gl_compatibility"
+textures/canvas_textures/default_texture_filter=0
+2d/snap/snap_2d_transforms_to_pixel=true
