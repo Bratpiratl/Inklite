@@ -54,7 +54,7 @@ static func deal_damage(sim: CombatSim, source: CombatUnit, target: CombatUnit, 
 	target.hp -= dealt
 	sim.emit({
 		"ev": "damage", "side": target.side, "slot": target.slot, "kind": kind,
-		"amount": dealt, "blocked": blocked, "hp": target.hp, "shield": target.shield,
+		"amount": dealt, "blocked": blocked, "hp": target.hp, "shield": target.shield, "poison": target.poison,
 	})
 	if target.hp <= 0:
 		sim.kill(target)

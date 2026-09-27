@@ -79,8 +79,10 @@ func test_poison_decays_when_configured() -> void:
 		H.monster("dummy", 20, 0),
 	], {"poison_decay_per_tick": 1, "max_ticks": 6})
 	var result := sim.simulate([H.unit("poisoner", 0)], [H.unit("dummy", 0)], 1)
-	var amounts := H.events_of(result, "damage").map(func(e: Dictionary) -> int: return e["amount"])
-	assert_array(amounts).is_equal([3, 2, 1])
+	var hits := H.events_of(result, "damage")
+	assert_array(hits.map(func(e: Dictionary) -> int: return e["amount"])).is_equal([3, 2, 1])
+	# Das Ereignis meldet den Giftstand nach dem Abklingen, damit die Anzeige ihn nicht nachrechnen muss.
+	assert_array(hits.map(func(e: Dictionary) -> int: return e["poison"])).is_equal([2, 1, 0])
 	assert_int(result["winner"]).is_equal(CombatSim.DRAW)
 
 

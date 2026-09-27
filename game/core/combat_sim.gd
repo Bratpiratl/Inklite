@@ -93,8 +93,9 @@ func _run_tick() -> void:
 	var decay: int = rules.get("poison_decay_per_tick", 0)
 	for unit in _all_in_order(first_side):
 		if unit.alive and unit.poison > 0:
-			Effects.deal_damage(self, null, unit, unit.poison, Effects.KIND_POISON)
+			var amount := unit.poison
 			unit.poison = maxi(unit.poison - decay, 0)
+			Effects.deal_damage(self, null, unit, amount, Effects.KIND_POISON)
 	_drain_queue()
 
 
