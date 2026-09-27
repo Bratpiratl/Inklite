@@ -16,7 +16,7 @@ Der vollständige Plan mit Meilensteinen steht in PLAN.md. Arbeite immer nur am 
 - Keine langen Gedankenstriche in Texten und Kommentaren.
 
 ## Befehle
-- Tests: godot --headless --path game -s addons/gdUnit4/bin/GdUnitCmdTool.gd -a test
+- Tests: game/tools/run_tests.sh (ruft GdUnit4 headless mit --ignoreHeadlessMode auf und schlägt auch bei Parse-Fehlern fehl, die GdUnit4 sonst still überspringt)
 - Simulation: godot --headless --path game -s res://tools/simulate.gd -- --runs 10000
 - Auswertung: python analysis/analyze.py logs/sim.jsonl
 

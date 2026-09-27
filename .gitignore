@@ -8,3 +8,6 @@ build/
 logs/
 analysis/report.html
 __pycache__/
+
+# GdUnit4-Berichte
+game/reports/

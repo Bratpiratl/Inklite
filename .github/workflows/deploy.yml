@@ -48,6 +48,13 @@ jobs:
           mv templates/web_* templates/version.txt ~/.local/share/godot/export_templates/${GODOT_VERSION}.stable/
           rm -rf templates *.zip *.tpz
 
+      - name: Godot in den PATH
+        run: |
+          echo "$HOME/godot" >> "$GITHUB_PATH"
+
+      - name: Tests
+        run: game/tools/run_tests.sh
+
       - name: Web-Export
         run: |
           mkdir -p build/web
