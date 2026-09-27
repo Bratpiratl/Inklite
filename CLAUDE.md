@@ -18,6 +18,7 @@ Der vollständige Plan mit Meilensteinen steht in PLAN.md. Arbeite immer nur am 
 ## Befehle
 - Tests: game/tools/run_tests.sh (ruft GdUnit4 headless mit --ignoreHeadlessMode auf und schlägt auch bei Parse-Fehlern fehl, die GdUnit4 sonst still überspringt)
 - Simulation: godot --headless --path game -s res://tools/simulate.gd -- --runs 10000
+- Geisterteams neu erzeugen (nach Änderungen an Monstern oder Shop): godot --headless --path game -s res://tools/make_ghosts.gd
 - Auswertung: python analysis/analyze.py logs/sim.jsonl
 
 ## Arbeitsweise
