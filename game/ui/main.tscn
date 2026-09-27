@@ -54,13 +54,6 @@ horizontal_alignment = 1
 custom_minimum_size = Vector2(0, 48)
 layout_mode = 2
 
-[node name="CounterLabel" type="Label" parent="Margin/Layout"]
-unique_name_in_owner = true
-layout_mode = 2
-theme_override_font_sizes/font_size = 20
-text = "Tipps: 0"
-horizontal_alignment = 1
-
 [node name="StartButton" type="Button" parent="Margin/Layout"]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(160, 56)
