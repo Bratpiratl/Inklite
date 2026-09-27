@@ -1,0 +1,11 @@
+{
+  "combat": {
+    "max_ticks": 40,
+    "poison_decay_per_tick": 0,
+    "poison_ignores_shield": true
+  },
+  "sim": {
+    "team_budget": 12,
+    "max_team_size": 9
+  }
+}

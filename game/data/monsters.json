@@ -1,0 +1,158 @@
+[
+  {
+    "id": "ember_pup",
+    "name": "Glutwelpe",
+    "type": "feuer",
+    "rarity": 1,
+    "cost": 3,
+    "sprite": "creatures/ember_pup.png",
+    "levels": [
+      {"hp": 6, "atk": 2, "ability": {"trigger": "on_attack", "effect": "poison", "target": "target", "value": 1}},
+      {"hp": 12, "atk": 4, "ability": {"trigger": "on_attack", "effect": "poison", "target": "target", "value": 2}},
+      {"hp": 24, "atk": 8, "ability": {"trigger": "on_attack", "effect": "poison", "target": "target", "value": 4}}
+    ]
+  },
+  {
+    "id": "cinder_ram",
+    "name": "Aschbock",
+    "type": "feuer",
+    "rarity": 2,
+    "cost": 4,
+    "sprite": "creatures/cinder_ram.png",
+    "levels": [
+      {"hp": 9, "atk": 3, "ability": {"trigger": "on_death", "effect": "damage", "target": "enemies_front", "value": 3}},
+      {"hp": 18, "atk": 6, "ability": {"trigger": "on_death", "effect": "damage", "target": "enemies_front", "value": 6}},
+      {"hp": 36, "atk": 12, "ability": {"trigger": "on_death", "effect": "damage", "target": "enemies_front", "value": 12}}
+    ]
+  },
+  {
+    "id": "blaze_drake",
+    "name": "Loderdrache",
+    "type": "feuer",
+    "rarity": 3,
+    "cost": 5,
+    "sprite": "creatures/blaze_drake.png",
+    "levels": [
+      {"hp": 10, "atk": 4, "ability": {"trigger": "battle_start", "effect": "damage", "target": "enemies_all", "value": 1}},
+      {"hp": 20, "atk": 8, "ability": {"trigger": "battle_start", "effect": "damage", "target": "enemies_all", "value": 2}},
+      {"hp": 40, "atk": 16, "ability": {"trigger": "battle_start", "effect": "damage", "target": "enemies_all", "value": 4}}
+    ]
+  },
+  {
+    "id": "drop_snail",
+    "name": "Tropfschnecke",
+    "type": "wasser",
+    "rarity": 1,
+    "cost": 3,
+    "sprite": "creatures/drop_snail.png",
+    "levels": [
+      {"hp": 8, "atk": 1, "ability": {"trigger": "battle_start", "effect": "shield", "target": "self", "value": 4}},
+      {"hp": 16, "atk": 2, "ability": {"trigger": "battle_start", "effect": "shield", "target": "self", "value": 8}},
+      {"hp": 32, "atk": 4, "ability": {"trigger": "battle_start", "effect": "shield", "target": "self", "value": 16}}
+    ]
+  },
+  {
+    "id": "tide_crab",
+    "name": "Gezeitenkrebs",
+    "type": "wasser",
+    "rarity": 2,
+    "cost": 4,
+    "sprite": "creatures/tide_crab.png",
+    "levels": [
+      {"hp": 10, "atk": 2, "ability": {"trigger": "battle_start", "effect": "shield", "target": "allies_row", "value": 2}},
+      {"hp": 20, "atk": 4, "ability": {"trigger": "battle_start", "effect": "shield", "target": "allies_row", "value": 4}},
+      {"hp": 40, "atk": 8, "ability": {"trigger": "battle_start", "effect": "shield", "target": "allies_row", "value": 8}}
+    ]
+  },
+  {
+    "id": "deep_whale",
+    "name": "Tiefenwal",
+    "type": "wasser",
+    "rarity": 3,
+    "cost": 5,
+    "sprite": "creatures/deep_whale.png",
+    "levels": [
+      {"hp": 16, "atk": 3, "ability": {"trigger": "on_death", "effect": "shield", "target": "allies_all", "value": 4}},
+      {"hp": 32, "atk": 6, "ability": {"trigger": "on_death", "effect": "shield", "target": "allies_all", "value": 8}},
+      {"hp": 64, "atk": 12, "ability": {"trigger": "on_death", "effect": "shield", "target": "allies_all", "value": 16}}
+    ]
+  },
+  {
+    "id": "moss_toad",
+    "name": "Moosunke",
+    "type": "moos",
+    "rarity": 1,
+    "cost": 3,
+    "sprite": "creatures/moss_toad.png",
+    "levels": [
+      {"hp": 9, "atk": 1, "ability": {"trigger": "on_hurt", "effect": "poison", "target": "attacker", "value": 1}},
+      {"hp": 18, "atk": 2, "ability": {"trigger": "on_hurt", "effect": "poison", "target": "attacker", "value": 2}},
+      {"hp": 36, "atk": 4, "ability": {"trigger": "on_hurt", "effect": "poison", "target": "attacker", "value": 4}}
+    ]
+  },
+  {
+    "id": "spore_moth",
+    "name": "Sporenmotte",
+    "type": "moos",
+    "rarity": 2,
+    "cost": 4,
+    "sprite": "creatures/spore_moth.png",
+    "levels": [
+      {"hp": 6, "atk": 2, "ability": {"trigger": "battle_start", "effect": "poison", "target": "enemies_all", "value": 1}},
+      {"hp": 12, "atk": 4, "ability": {"trigger": "battle_start", "effect": "poison", "target": "enemies_all", "value": 2}},
+      {"hp": 24, "atk": 8, "ability": {"trigger": "battle_start", "effect": "poison", "target": "enemies_all", "value": 4}}
+    ]
+  },
+  {
+    "id": "thorn_golem",
+    "name": "Dornengolem",
+    "type": "moos",
+    "rarity": 3,
+    "cost": 5,
+    "sprite": "creatures/thorn_golem.png",
+    "levels": [
+      {"hp": 18, "atk": 2, "ability": {"trigger": "on_hurt", "effect": "damage", "target": "attacker", "value": 1}},
+      {"hp": 36, "atk": 4, "ability": {"trigger": "on_hurt", "effect": "damage", "target": "attacker", "value": 2}},
+      {"hp": 72, "atk": 8, "ability": {"trigger": "on_hurt", "effect": "damage", "target": "attacker", "value": 4}}
+    ]
+  },
+  {
+    "id": "bolt_bat",
+    "name": "Blitzfledermaus",
+    "type": "blitz",
+    "rarity": 1,
+    "cost": 3,
+    "sprite": "creatures/bolt_bat.png",
+    "levels": [
+      {"hp": 4, "atk": 3, "ability": {"trigger": "on_attack", "effect": "damage", "target": "enemy_random", "value": 1}},
+      {"hp": 8, "atk": 6, "ability": {"trigger": "on_attack", "effect": "damage", "target": "enemy_random", "value": 2}},
+      {"hp": 16, "atk": 12, "ability": {"trigger": "on_attack", "effect": "damage", "target": "enemy_random", "value": 4}}
+    ]
+  },
+  {
+    "id": "spark_ferret",
+    "name": "Funkenfrettchen",
+    "type": "blitz",
+    "rarity": 2,
+    "cost": 4,
+    "sprite": "creatures/spark_ferret.png",
+    "levels": [
+      {"hp": 7, "atk": 3, "ability": {"trigger": "battle_start", "effect": "damage", "target": "enemy_random", "value": 3}},
+      {"hp": 14, "atk": 6, "ability": {"trigger": "battle_start", "effect": "damage", "target": "enemy_random", "value": 6}},
+      {"hp": 28, "atk": 12, "ability": {"trigger": "battle_start", "effect": "damage", "target": "enemy_random", "value": 12}}
+    ]
+  },
+  {
+    "id": "storm_lynx",
+    "name": "Sturmluchs",
+    "type": "blitz",
+    "rarity": 3,
+    "cost": 5,
+    "sprite": "creatures/storm_lynx.png",
+    "levels": [
+      {"hp": 10, "atk": 4, "ability": {"trigger": "on_attack", "effect": "damage", "target": "enemy_random", "value": 2}},
+      {"hp": 20, "atk": 8, "ability": {"trigger": "on_attack", "effect": "damage", "target": "enemy_random", "value": 4}},
+      {"hp": 40, "atk": 16, "ability": {"trigger": "on_attack", "effect": "damage", "target": "enemy_random", "value": 8}}
+    ]
+  }
+]
