@@ -7,6 +7,7 @@ func _ready() -> void:
 	continue_button.visible = Session.has_save()
 	continue_button.pressed.connect(_on_continue)
 	%StartButton.pressed.connect(_on_new_run)
+	%DebugButton.pressed.connect(%DebugPanel.show)
 
 
 func _on_new_run() -> void:

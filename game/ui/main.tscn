@@ -1,6 +1,7 @@
-[gd_scene load_steps=2 format=3 uid="uid://b8inklitemain0"]
+[gd_scene load_steps=3 format=3 uid="uid://b8inklitemain0"]
 
 [ext_resource type="Script" path="res://ui/main.gd" id="1_main"]
+[ext_resource type="PackedScene" path="res://ui/debug_panel.tscn" id="2_debug"]
 
 [node name="Main" type="Control"]
 layout_mode = 3
@@ -75,3 +76,30 @@ size_flags_horizontal = 4
 focus_mode = 0
 theme_override_font_sizes/font_size = 22
 text = "Neuer Run"
+
+[node name="DebugButton" type="Button" parent="."]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(72, 48)
+layout_mode = 1
+anchors_preset = 3
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -84.0
+offset_top = -60.0
+offset_right = -12.0
+offset_bottom = -12.0
+grow_horizontal = 0
+grow_vertical = 0
+focus_mode = 0
+flat = true
+theme_override_colors/font_color = Color(0.45, 0.42, 0.52, 1)
+theme_override_font_sizes/font_size = 13
+text = "Debug"
+
+[node name="DebugPanel" parent="." instance=ExtResource("2_debug")]
+unique_name_in_owner = true
+visible = false
+layout_mode = 1
+

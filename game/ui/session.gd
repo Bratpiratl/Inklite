@@ -33,6 +33,7 @@ func new_run(trainer_id: String) -> void:
 	# Der Seed selbst darf aus der Uhr kommen, alles danach läuft über GameRng.
 	var run_seed := absi(int(Time.get_unix_time_from_system() * 1000.0) ^ Time.get_ticks_usec()) % 2147483647
 	run = RunState.create(db, balance, ghosts, run_seed, trainer_id, items)
+	_attach_logger()
 	last_battle = {}
 	save()
 
@@ -46,7 +47,14 @@ func load_run() -> bool:
 	if not (data is Dictionary) or int(data.get("version", 0)) != SAVE_VERSION:
 		return false
 	run = RunState.from_dict(data["run"], db, balance, ghosts, items)
+	_attach_logger()
 	return true
+
+
+## Echte Runs loggen im selben Format wie die Bots (telemetry/logger.gd), nur lokal.
+func _attach_logger() -> void:
+	var context := {"run": "%08x" % run.seed_value, "v": RunLogger.version()}
+	run.logger = RunLogger.new(context, LogStore.append)
 
 
 func save() -> void:
