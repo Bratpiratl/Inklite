@@ -6,8 +6,11 @@ build/
 
 # Logs und Auswertung
 logs/
-analysis/report.html
+analysis/report*.html
 __pycache__/
 
 # GdUnit4-Berichte
 game/reports/
+
+# Python-Umgebung für die Auswertung
+analysis/.venv/
