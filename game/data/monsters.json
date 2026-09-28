@@ -111,9 +111,9 @@
     "cost": 5,
     "sprite": "creatures/thorn_golem.png",
     "levels": [
-      {"hp": 18, "atk": 2, "ability": {"trigger": "on_hurt", "effect": "damage", "target": "attacker", "value": 1}},
-      {"hp": 36, "atk": 4, "ability": {"trigger": "on_hurt", "effect": "damage", "target": "attacker", "value": 2}},
-      {"hp": 72, "atk": 8, "ability": {"trigger": "on_hurt", "effect": "damage", "target": "attacker", "value": 4}}
+      {"hp": 16, "atk": 2, "ability": {"trigger": "on_hurt", "effect": "damage", "target": "attacker", "value": 1}},
+      {"hp": 32, "atk": 4, "ability": {"trigger": "on_hurt", "effect": "damage", "target": "attacker", "value": 2}},
+      {"hp": 64, "atk": 8, "ability": {"trigger": "on_hurt", "effect": "damage", "target": "attacker", "value": 4}}
     ]
   },
   {
