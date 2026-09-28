@@ -5,7 +5,9 @@ extends Control
 const SPEEDS: Array[float] = [1.0, 2.0]
 const SKIP_SPEED := 1000.0
 
-const FLOAT_RISE := 26.0
+const POP_STAGGER := 0.04
+const POP_TIME := 0.25
+const RESULT_POP := 1.8
 
 const COLOR_DAMAGE := Color(1, 0.36, 0.36)
 const COLOR_BLOCK := Color(0.5, 0.8, 1)
@@ -19,7 +21,8 @@ const COLOR_ITEM := Color(0.85, 0.7, 1)
 
 @onready var _enemy_board: Board = %EnemyBoard
 @onready var _player_board: Board = %PlayerBoard
-@onready var _fx: Control = %FxLayer
+@onready var _fx: BattleFx = %FxLayer
+@onready var _shake_target: Control = $Margin
 @onready var _title: Label = %Title
 @onready var _tick_label: Label = %TickLabel
 @onready var _result_label: Label = %ResultLabel
@@ -33,6 +36,7 @@ var _db: MonsterDb
 var _generation := 0  # Jeder Neustart erhöht das, laufende Wiedergaben brechen dann ab.
 var _playing := false
 var _skipping := false
+var _hit_from := Vector2.ZERO  # woher der letzte Treffer kam, für Rückstoß und Funkenrichtung
 
 
 func _ready() -> void:
@@ -52,8 +56,7 @@ func _ready() -> void:
 func _start() -> void:
 	_generation += 1
 	_skipping = false
-	for child in _fx.get_children():
-		child.queue_free()
+	_fx.clear()
 	_enemy_board.clear()
 	_player_board.clear()
 	_result_label.text = ""
@@ -89,58 +92,96 @@ func _on_continue() -> void:
 
 ## Zeigt ein Ereignis an. Wie lange danach gewartet wird, bestimmt BattleTiming.
 func _play_event(e: Dictionary) -> void:
+	_fx.speed = _speed()
 	match e["ev"]:
 		"start":
 			_tick_label.text = ""
+			var index := 0
 			for unit: Dictionary in e["units"]:
 				var def := _db.get_def(unit["id"])
-				_cell(unit["side"], unit["slot"]).show_unit(def["sprite"], unit["hp"], unit["atk"], unit["level"], unit["side"] == 1)
+				var cell := _cell(unit["side"], unit["slot"])
+				cell.show_unit(def["sprite"], unit["hp"], unit["atk"], unit["level"], unit["side"] == 1)
+				if not _skipping:
+					cell.pop_in(index * POP_STAGGER / _speed(), POP_TIME / _speed())
+				index += 1
 		"tick":
 			_tick_label.text = "Zug %d" % e["t"]
 		"attack":
 			Audio.play_hit()
-			var direction := -1.0 if e["side"] == 0 else 1.0
-			_cell(e["side"], e["slot"]).jump(direction, BattleTiming.T_ATTACK / _speed())
+			var attacker := _cell(e["side"], e["slot"])
+			var target := _cell(e["to_side"], e["to_slot"])
+			_hit_from = attacker.center()
+			attacker.lunge(target.center(), BattleTiming.T_ATTACK / _speed())
 		"damage":
-			var cell := _cell(e["side"], e["slot"])
-			cell.set_stats(e["hp"], e["shield"], e["poison"])
-			var is_poison: bool = e["kind"] == Effects.KIND_POISON
-			cell.flash(FLASH_POISON if is_poison else FLASH_HIT, BattleTiming.T_EFFECT / _speed())
-			if e["blocked"] > 0:
-				_float_text(cell, "-%d" % e["blocked"], COLOR_BLOCK)
-			if e["amount"] > 0 or e["blocked"] == 0:
-				_float_text(cell, "-%d" % e["amount"], COLOR_POISON if is_poison else COLOR_DAMAGE)
+			_on_damage(e)
 		"poison":
 			var cell := _cell(e["side"], e["slot"])
 			Audio.play("poison")
 			cell.set_stats(cell.hp, cell.shield, e["total"])
 			cell.flash(FLASH_POISON, BattleTiming.T_EFFECT / _speed())
-			_float_text(cell, "+%d Gift" % e["amount"], COLOR_POISON)
+			if not _skipping:
+				_fx.rise(cell, COLOR_POISON)
+				_fx.float_text(cell, "+%d Gift" % e["amount"], COLOR_POISON)
 		"shield":
 			var cell := _cell(e["side"], e["slot"])
 			Audio.play("shield")
 			cell.set_stats(cell.hp, e["total"], cell.poison)
 			cell.flash(FLASH_SHIELD, BattleTiming.T_EFFECT / _speed())
-			_float_text(cell, "+%d Schild" % e["amount"], COLOR_BLOCK)
+			if not _skipping:
+				_fx.ring(cell, COLOR_BLOCK)
+				_fx.float_text(cell, "+%d Schild" % e["amount"], COLOR_BLOCK)
 		"ability":
 			var source: String = e.get("source", "")
+			var anchor: Control = _cell(e["side"], e["slot"]) if e["slot"] >= 0 else _board(e["side"])
+			_hit_from = anchor.global_position + anchor.size / 2.0
 			if source == "":
 				_cell(e["side"], e["slot"]).flash(FLASH_ABILITY, BattleTiming.T_EFFECT / _speed())
-			else:
+				if not _skipping:
+					_fx.ring(anchor, COLOR_ABILITY)
+			elif not _skipping:
 				# Trainer oder Trinket: Name über dem auslösenden Monster oder mittig über dem Raster.
-				var anchor: Control = _cell(e["side"], e["slot"]) if e["slot"] >= 0 else _board(e["side"])
-				_float_text(anchor, Session.item_def(source).get("name", source), COLOR_ITEM)
+				_fx.ring(anchor, COLOR_ITEM)
+				_fx.float_text(anchor, Session.item_def(source).get("name", source), COLOR_ITEM)
 		"buff":
 			var cell := _cell(e["side"], e["slot"])
 			cell.set_atk(e["atk"])
 			cell.set_stats(e["hp"], cell.shield, cell.poison)
 			cell.flash(FLASH_ABILITY, BattleTiming.T_EFFECT / _speed())
-			_float_text(cell, "+%d %s" % [e["amount"], "Angriff" if e["stat"] == "atk" else "HP"], COLOR_ABILITY)
+			if not _skipping:
+				_fx.rise(cell, COLOR_ABILITY, 10)
+				_fx.float_text(cell, "+%d %s" % [e["amount"], "Angriff" if e["stat"] == "atk" else "HP"], COLOR_ABILITY)
 		"death":
 			Audio.play("death")
-			_cell(e["side"], e["slot"]).die(BattleTiming.T_DEATH / _speed())
+			var cell := _cell(e["side"], e["slot"])
+			cell.die(BattleTiming.T_DEATH / _speed())
+			if not _skipping:
+				_fx.puff(cell)
+				_fx.shake(_shake_target, 0.7)
 		"end":
 			_show_result(e["winner"])
+
+
+func _on_damage(e: Dictionary) -> void:
+	var cell := _cell(e["side"], e["slot"])
+	cell.set_stats(e["hp"], e["shield"], e["poison"])
+	var kind: String = e["kind"]
+	var is_poison := kind == Effects.KIND_POISON
+	cell.flash(FLASH_POISON if is_poison else FLASH_HIT, BattleTiming.T_EFFECT / _speed())
+	if _skipping:
+		return
+	var away := (cell.center() - _hit_from).normalized()
+	if is_poison:
+		_fx.rise(cell, COLOR_POISON, 6)
+	else:
+		cell.knock(_hit_from, BattleTiming.T_EFFECT / _speed())
+		if e["blocked"] > 0:
+			_fx.sparks(cell, COLOR_BLOCK, away, 8)
+		if e["amount"] > 0:
+			_fx.sparks(cell, Color.WHITE if kind == Effects.KIND_ATTACK else COLOR_ABILITY, away)
+	if e["blocked"] > 0:
+		_fx.float_text(cell, "-%d" % e["blocked"], COLOR_BLOCK)
+	if e["amount"] > 0 or e["blocked"] == 0:
+		_fx.damage_number(cell, e["amount"], COLOR_POISON if is_poison else COLOR_DAMAGE, _shake_target)
 
 
 func _show_result(winner: int) -> void:
@@ -148,6 +189,8 @@ func _show_result(winner: int) -> void:
 	match winner:
 		0:
 			_set_result("Sieg!", COLOR_POISON)
+			if not _skipping:
+				_fx.confetti()
 		1:
 			_set_result("Niederlage", COLOR_DAMAGE)
 		_:
@@ -164,30 +207,14 @@ func _show_result(winner: int) -> void:
 		_outcome_label.text = "Siege %d/%d, Leben %d" % [run.wins, run.wins_to_victory(), run.lives]
 
 
+## Ergebnis ploppt groß auf und setzt sich.
 func _set_result(text: String, color: Color) -> void:
 	_result_label.text = text
 	_result_label.add_theme_color_override("font_color", color)
-
-
-func _float_text(anchor: Control, text: String, color: Color) -> void:
-	if _skipping:
-		return
-	var label := Label.new()
-	label.text = text
-	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	label.add_theme_color_override("font_color", color)
-	label.add_theme_color_override("font_outline_color", Color.BLACK)
-	label.add_theme_constant_override("outline_size", 5)
-	label.add_theme_font_size_override("font_size", 16)
-	_fx.add_child(label)
-	label.size = Vector2(anchor.size.x + 32, 22)
-	label.position = anchor.global_position - _fx.global_position + Vector2(-16, anchor.size.y / 2.0 - 24)
-	var tween := label.create_tween().set_parallel()
-	var duration := BattleTiming.T_FLOAT / _speed()
-	tween.tween_property(label, "position:y", label.position.y - FLOAT_RISE, duration)
-	tween.tween_property(label, "modulate:a", 0.0, duration).set_delay(duration * 0.4)
-	tween.chain().tween_callback(label.queue_free)
+	_result_label.pivot_offset = _result_label.size / 2.0
+	_result_label.scale = Vector2.ONE * RESULT_POP
+	_result_label.create_tween().tween_property(_result_label, "scale", Vector2.ONE, 0.35) \
+		.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 
 
 func _cell(side: int, slot: int) -> UnitCell:

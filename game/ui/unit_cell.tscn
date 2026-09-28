@@ -87,9 +87,9 @@ unique_name_in_owner = true
 visible = false
 layout_mode = 1
 offset_left = 2.0
-offset_top = 0.0
+offset_top = 6.0
 offset_right = 26.0
-offset_bottom = 17.0
+offset_bottom = 23.0
 theme_override_colors/font_color = Color(0.498039, 0.8, 1, 1)
 theme_override_colors/font_outline_color = Color(0.0784314, 0.0588235, 0.117647, 1)
 theme_override_constants/outline_size = 4
@@ -105,7 +105,8 @@ anchor_left = 1.0
 anchor_right = 1.0
 offset_left = -26.0
 offset_right = -2.0
-offset_bottom = 17.0
+offset_top = 6.0
+offset_bottom = 23.0
 grow_horizontal = 0
 theme_override_colors/font_color = Color(0.556863, 1, 0.419608, 1)
 theme_override_colors/font_outline_color = Color(0.0784314, 0.0588235, 0.117647, 1)
@@ -132,3 +133,47 @@ theme_override_constants/outline_size = 4
 theme_override_font_sizes/font_size = 11
 text = "St.2"
 horizontal_alignment = 1
+
+[node name="HpBar" type="Control" parent="Body"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_left = 10.0
+offset_top = 2.0
+offset_right = -10.0
+offset_bottom = 6.0
+grow_horizontal = 2
+mouse_filter = 2
+
+[node name="Back" type="ColorRect" parent="Body/HpBar"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -1.0
+offset_top = -1.0
+offset_right = 1.0
+offset_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0.0784314, 0.0588235, 0.117647, 1)
+
+[node name="HpLag" type="ColorRect" parent="Body/HpBar"]
+unique_name_in_owner = true
+layout_mode = 0
+offset_right = 44.0
+offset_bottom = 4.0
+mouse_filter = 2
+color = Color(1, 1, 1, 0.9)
+
+[node name="HpFill" type="ColorRect" parent="Body/HpBar"]
+unique_name_in_owner = true
+layout_mode = 0
+offset_right = 44.0
+offset_bottom = 4.0
+mouse_filter = 2
+color = Color(0.45, 0.85, 0.35, 1)
+

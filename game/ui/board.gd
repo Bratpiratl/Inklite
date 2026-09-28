@@ -25,6 +25,7 @@ func _ready() -> void:
 		cell.slot = slot
 		cell.set_floor(floor_texture)
 		cell.set_interactive(interactive)
+		cell.show_hp_bar = not interactive
 		cell.tapped.connect(unit_tapped.emit)
 		cell.dropped_on.connect(unit_moved.emit)
 		_cells[slot] = cell
