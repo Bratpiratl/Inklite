@@ -45,6 +45,7 @@ func _ready() -> void:
 	_replay_button.pressed.connect(_start)
 	_speed_button.pressed.connect(_toggle_speed)
 	_update_speed_button()
+	Audio.play_music("battle")
 	_start.call_deferred()
 
 
@@ -97,6 +98,7 @@ func _play_event(e: Dictionary) -> void:
 		"tick":
 			_tick_label.text = "Zug %d" % e["t"]
 		"attack":
+			Audio.play_hit()
 			var direction := -1.0 if e["side"] == 0 else 1.0
 			_cell(e["side"], e["slot"]).jump(direction, BattleTiming.T_ATTACK / _speed())
 		"damage":
@@ -110,11 +112,13 @@ func _play_event(e: Dictionary) -> void:
 				_float_text(cell, "-%d" % e["amount"], COLOR_POISON if is_poison else COLOR_DAMAGE)
 		"poison":
 			var cell := _cell(e["side"], e["slot"])
+			Audio.play("poison")
 			cell.set_stats(cell.hp, cell.shield, e["total"])
 			cell.flash(FLASH_POISON, BattleTiming.T_EFFECT / _speed())
 			_float_text(cell, "+%d Gift" % e["amount"], COLOR_POISON)
 		"shield":
 			var cell := _cell(e["side"], e["slot"])
+			Audio.play("shield")
 			cell.set_stats(cell.hp, e["total"], cell.poison)
 			cell.flash(FLASH_SHIELD, BattleTiming.T_EFFECT / _speed())
 			_float_text(cell, "+%d Schild" % e["amount"], COLOR_BLOCK)
@@ -133,6 +137,7 @@ func _play_event(e: Dictionary) -> void:
 			cell.flash(FLASH_ABILITY, BattleTiming.T_EFFECT / _speed())
 			_float_text(cell, "+%d %s" % [e["amount"], "Angriff" if e["stat"] == "atk" else "HP"], COLOR_ABILITY)
 		"death":
+			Audio.play("death")
 			_cell(e["side"], e["slot"]).die(BattleTiming.T_DEATH / _speed())
 		"end":
 			_show_result(e["winner"])
@@ -147,6 +152,10 @@ func _show_result(winner: int) -> void:
 			_set_result("Niederlage", COLOR_DAMAGE)
 		_:
 			_set_result("Unentschieden", COLOR_ABILITY)
+	if run.is_over():
+		Audio.play("run_won" if run.is_victory() else "run_lost")
+	else:
+		Audio.play("win" if winner == 0 else "loss")
 	if run.is_victory():
 		_outcome_label.text = "Run gewonnen! %d Siege, %d Leben übrig." % [run.wins, run.lives]
 	elif run.is_over():
@@ -203,16 +212,16 @@ func _round_end_text() -> String:
 
 
 func _speed() -> float:
-	return SKIP_SPEED if _skipping else SPEEDS[Session.speed_index]
+	return SKIP_SPEED if _skipping else SPEEDS[Prefs.speed_index]
 
 
 func _toggle_speed() -> void:
-	Session.speed_index = (Session.speed_index + 1) % SPEEDS.size()
+	Prefs.set_value("speed_index", (Prefs.speed_index + 1) % SPEEDS.size())
 	_update_speed_button()
 
 
 func _update_speed_button() -> void:
-	_speed_button.text = "%dx" % int(SPEEDS[Session.speed_index])
+	_speed_button.text = "%dx" % int(SPEEDS[Prefs.speed_index])
 
 
 ## Beim Überspringen kehrt die Funktion ohne await zurück, der Rest läuft dann im selben Frame durch.

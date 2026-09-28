@@ -20,7 +20,7 @@ func show_choices(ids: Array) -> void:
 		button.add_theme_constant_override("icon_max_width", ICON_SIZE)
 		button.alignment = HORIZONTAL_ALIGNMENT_LEFT
 		button.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		button.add_theme_font_size_override("font_size", 13)
+		button.add_theme_font_size_override("font_size", 16)
 		button.text = AbilityText.item_line(Session.item_def(id))
 		button.pressed.connect(chosen.emit.bind(id))
 		add_child(button)

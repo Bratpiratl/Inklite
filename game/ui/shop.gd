@@ -18,7 +18,7 @@ const ITEM_SIZE := 48
 @onready var _shop_area: Control = %ShopArea
 @onready var _sell_zone: DropZone = %SellZone
 @onready var _sell_label: Label = %SellLabel
-@onready var _item_bar: HBoxContainer = %ItemBar
+@onready var _item_bar: HBoxContainer = %Items
 @onready var _trinket_overlay: Control = %TrinketOverlay
 @onready var _trinket_choices: ChoiceList = %TrinketChoices
 
@@ -36,6 +36,8 @@ func _ready() -> void:
 	_reroll.pressed.connect(_on_reroll)
 	_fight.pressed.connect(_on_fight)
 	_trinket_choices.chosen.connect(_on_trinket_chosen)
+	%MenuButton.pressed.connect(func() -> void: Session.goto(Session.TITLE_SCENE))
+	Audio.play_music("menu")
 	_info.text = HINT
 	_refresh()
 
@@ -51,6 +53,7 @@ func _refresh() -> void:
 		var card: ShopCard = CARD_SCENE.instantiate()
 		var index := _cards.get_child_count()
 		card.pressed.connect(func() -> void: _on_buy(index))
+		card.add_to_group("silent_button")
 		_cards.add_child(card)
 	for i in _cards.get_child_count():
 		var card: ShopCard = _cards.get_child(i)
@@ -100,7 +103,9 @@ func _on_trinket_chosen(id: String) -> void:
 func _on_buy(index: int) -> void:
 	var result := _run.buy(index)
 	if not result["ok"]:
+		Audio.play("error")
 		return
+	Audio.play("merge" if not result["merges"].is_empty() else "buy")
 	Session.save()
 	_refresh()
 	var unit: Dictionary = _run.board[result["slot"]]
@@ -133,6 +138,7 @@ func _on_sell_dropped(data: Dictionary) -> void:
 	if unit == null:
 		return
 	var value := _run.sell(slot)
+	Audio.play("sell")
 	Session.save()
 	_refresh()
 	_info.text = "%s verkauft für %d Gold." % [Session.db.get_def(unit["id"])["name"], value]
@@ -140,6 +146,7 @@ func _on_sell_dropped(data: Dictionary) -> void:
 
 func _on_reroll() -> void:
 	if _run.reroll():
+		Audio.play("reroll")
 		Session.save()
 		_refresh()
 

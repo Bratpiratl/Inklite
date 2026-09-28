@@ -1,0 +1,51 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://ui/orientation_hint.gd" id="1_hint"]
+[ext_resource type="Texture2D" path="res://assets/logo.png" id="2_logo"]
+
+[node name="OrientationHint" type="CanvasLayer"]
+layer = 100
+script = ExtResource("1_hint")
+
+[node name="Root" type="Control" parent="."]
+visible = false
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Dim" type="ColorRect" parent="Root"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.105882, 0.0901961, 0.14902, 1)
+
+[node name="Center" type="CenterContainer" parent="Root"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Layout" type="VBoxContainer" parent="Root/Center"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="Logo" type="TextureRect" parent="Root/Center/Layout"]
+custom_minimum_size = Vector2(96, 96)
+layout_mode = 2
+size_flags_horizontal = 4
+texture = ExtResource("2_logo")
+expand_mode = 1
+
+[node name="Label" type="Label" parent="Root/Center/Layout"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.92549, 0.827451, 0.576471, 1)
+theme_override_font_sizes/font_size = 32
+text = "Bitte dreh dein Gerät ins Hochformat."
+horizontal_alignment = 1

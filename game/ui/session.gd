@@ -9,6 +9,8 @@ const TITLE_SCENE := "res://ui/main.tscn"
 const SHOP_SCENE := "res://ui/shop.tscn"
 const BATTLE_SCENE := "res://ui/battle_view.tscn"
 const TRAINER_SCENE := "res://ui/trainer_select.tscn"
+const SETTINGS_SCENE := "res://ui/settings.tscn"
+const HISTORY_SCENE := "res://ui/history.tscn"
 const SPRITE_ROOT := "res://assets/sprites/"
 
 var db: MonsterDb
@@ -17,7 +19,6 @@ var balance: Dictionary
 var ghosts: Array = []
 var run: RunState
 var last_battle: Dictionary = {}
-var speed_index := 0
 
 
 func _ready() -> void:
@@ -79,6 +80,7 @@ func fight() -> void:
 		return
 	last_battle = run.fight()
 	if run.is_over():
+		RunHistory.add(run)
 		clear_save()
 	else:
 		save()

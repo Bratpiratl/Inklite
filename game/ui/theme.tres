@@ -1,0 +1,136 @@
+[gd_resource type="Theme" load_steps=14 format=3]
+
+[ext_resource type="FontFile" path="res://assets/fonts/kenney_mini.ttf" id="1_font"]
+[ext_resource type="Texture2D" path="res://assets/ui/button.png" id="2_button"]
+[ext_resource type="Texture2D" path="res://assets/ui/button_pressed.png" id="3_pressed"]
+[ext_resource type="Texture2D" path="res://assets/ui/button_primary.png" id="4_primary"]
+[ext_resource type="Texture2D" path="res://assets/ui/button_primary_pressed.png" id="5_primary_pressed"]
+[ext_resource type="Texture2D" path="res://assets/ui/panel.png" id="6_panel"]
+
+[sub_resource type="StyleBoxTexture" id="button_normal"]
+content_margin_left = 10.0
+content_margin_top = 6.0
+content_margin_right = 10.0
+content_margin_bottom = 8.0
+texture = ExtResource("2_button")
+texture_margin_left = 4.0
+texture_margin_top = 4.0
+texture_margin_right = 4.0
+texture_margin_bottom = 5.0
+axis_stretch_horizontal = 2
+axis_stretch_vertical = 2
+
+[sub_resource type="StyleBoxTexture" id="button_pressed"]
+content_margin_left = 10.0
+content_margin_top = 8.0
+content_margin_right = 10.0
+content_margin_bottom = 6.0
+texture = ExtResource("3_pressed")
+texture_margin_left = 4.0
+texture_margin_top = 4.0
+texture_margin_right = 4.0
+texture_margin_bottom = 4.0
+axis_stretch_horizontal = 2
+axis_stretch_vertical = 2
+
+[sub_resource type="StyleBoxTexture" id="button_disabled"]
+content_margin_left = 10.0
+content_margin_top = 6.0
+content_margin_right = 10.0
+content_margin_bottom = 8.0
+texture = ExtResource("2_button")
+texture_margin_left = 4.0
+texture_margin_top = 4.0
+texture_margin_right = 4.0
+texture_margin_bottom = 5.0
+axis_stretch_horizontal = 2
+axis_stretch_vertical = 2
+modulate_color = Color(0.55, 0.55, 0.62, 1)
+
+[sub_resource type="StyleBoxTexture" id="primary_normal"]
+content_margin_left = 10.0
+content_margin_top = 6.0
+content_margin_right = 10.0
+content_margin_bottom = 8.0
+texture = ExtResource("4_primary")
+texture_margin_left = 4.0
+texture_margin_top = 4.0
+texture_margin_right = 4.0
+texture_margin_bottom = 5.0
+axis_stretch_horizontal = 2
+axis_stretch_vertical = 2
+
+[sub_resource type="StyleBoxTexture" id="primary_pressed"]
+content_margin_left = 10.0
+content_margin_top = 8.0
+content_margin_right = 10.0
+content_margin_bottom = 6.0
+texture = ExtResource("5_primary_pressed")
+texture_margin_left = 4.0
+texture_margin_top = 4.0
+texture_margin_right = 4.0
+texture_margin_bottom = 4.0
+axis_stretch_horizontal = 2
+axis_stretch_vertical = 2
+
+[sub_resource type="StyleBoxTexture" id="primary_disabled"]
+content_margin_left = 10.0
+content_margin_top = 6.0
+content_margin_right = 10.0
+content_margin_bottom = 8.0
+texture = ExtResource("4_primary")
+texture_margin_left = 4.0
+texture_margin_top = 4.0
+texture_margin_right = 4.0
+texture_margin_bottom = 5.0
+axis_stretch_horizontal = 2
+axis_stretch_vertical = 2
+modulate_color = Color(0.5, 0.48, 0.52, 1)
+
+[sub_resource type="StyleBoxTexture" id="panel"]
+content_margin_left = 10.0
+content_margin_top = 8.0
+content_margin_right = 10.0
+content_margin_bottom = 8.0
+texture = ExtResource("6_panel")
+texture_margin_left = 4.0
+texture_margin_top = 4.0
+texture_margin_right = 4.0
+texture_margin_bottom = 4.0
+axis_stretch_horizontal = 2
+axis_stretch_vertical = 2
+
+[sub_resource type="StyleBoxEmpty" id="focus"]
+
+[resource]
+default_font = ExtResource("1_font")
+default_font_size = 16
+Button/colors/font_color = Color(1, 1, 1, 1)
+Button/colors/font_disabled_color = Color(0.75, 0.73, 0.8, 1)
+Button/colors/font_hover_color = Color(1, 1, 1, 1)
+Button/colors/font_pressed_color = Color(1, 1, 1, 1)
+Button/colors/font_focus_color = Color(1, 1, 1, 1)
+Button/colors/font_hover_pressed_color = Color(1, 1, 1, 1)
+Button/colors/font_outline_color = Color(0.164706, 0.141176, 0.219608, 1)
+Button/constants/outline_size = 4
+Button/styles/disabled = SubResource("button_disabled")
+Button/styles/focus = SubResource("focus")
+Button/styles/hover = SubResource("button_normal")
+Button/styles/hover_pressed = SubResource("button_pressed")
+Button/styles/normal = SubResource("button_normal")
+Button/styles/pressed = SubResource("button_pressed")
+Label/colors/font_outline_color = Color(0.0784314, 0.0588235, 0.117647, 1)
+PanelContainer/styles/panel = SubResource("panel")
+PrimaryButton/base_type = &"Button"
+PrimaryButton/colors/font_color = Color(0.231373, 0.164706, 0.113725, 1)
+PrimaryButton/colors/font_disabled_color = Color(0.25, 0.22, 0.2, 1)
+PrimaryButton/colors/font_hover_color = Color(0.231373, 0.164706, 0.113725, 1)
+PrimaryButton/colors/font_pressed_color = Color(0.231373, 0.164706, 0.113725, 1)
+PrimaryButton/colors/font_focus_color = Color(0.231373, 0.164706, 0.113725, 1)
+PrimaryButton/colors/font_hover_pressed_color = Color(0.231373, 0.164706, 0.113725, 1)
+PrimaryButton/constants/outline_size = 0
+PrimaryButton/styles/disabled = SubResource("primary_disabled")
+PrimaryButton/styles/hover = SubResource("primary_normal")
+PrimaryButton/styles/hover_pressed = SubResource("primary_pressed")
+PrimaryButton/styles/normal = SubResource("primary_normal")
+PrimaryButton/styles/pressed = SubResource("primary_pressed")

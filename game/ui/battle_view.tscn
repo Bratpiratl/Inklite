@@ -1,5 +1,6 @@
-[gd_scene load_steps=6 format=3]
+[gd_scene load_steps=7 format=3]
 
+[ext_resource type="Script" path="res://ui/safe_margin.gd" id="99_safe"]
 [ext_resource type="Script" path="res://ui/battle_view.gd" id="1_view"]
 [ext_resource type="PackedScene" path="res://ui/board.tscn" id="2_board"]
 [ext_resource type="Texture2D" path="res://assets/sprites/tiles/floor_enemy.png" id="3_floor_enemy"]
@@ -39,6 +40,7 @@ theme_override_constants/margin_left = 12
 theme_override_constants/margin_top = 8
 theme_override_constants/margin_right = 12
 theme_override_constants/margin_bottom = 12
+script = ExtResource("99_safe")
 
 [node name="Layout" type="VBoxContainer" parent="Margin"]
 layout_mode = 2
@@ -125,6 +127,7 @@ layout_mode = 2
 size_flags_horizontal = 3
 focus_mode = 0
 theme_override_font_sizes/font_size = 18
+theme_type_variation = &"PrimaryButton"
 text = "Überspringen"
 
 [node name="ReplayButton" type="Button" parent="Margin/Layout/ButtonBar"]

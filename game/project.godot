@@ -10,10 +10,17 @@ config/version="0.1.0"
 run/main_scene="res://ui/main.tscn"
 config/features=PackedStringArray("4.4", "GL Compatibility")
 config/icon="res://icon.png"
+boot_splash/bg_color=Color(0.105882, 0.0901961, 0.14902, 1)
+boot_splash/image="res://assets/splash.png"
+boot_splash/fullsize=false
+boot_splash/use_filter=false
 
 [autoload]
 
 Session="*res://ui/session.gd"
+Prefs="*res://ui/prefs.gd"
+Audio="*res://ui/audio.gd"
+OrientationHint="*res://ui/orientation_hint.tscn"
 
 [display]
 
@@ -22,6 +29,10 @@ window/size/viewport_height=640
 window/handheld/orientation=1
 window/stretch/mode="canvas_items"
 window/stretch/aspect="expand"
+
+[gui]
+
+theme/custom="res://ui/theme.tres"
 
 [input_devices]
 

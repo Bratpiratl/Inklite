@@ -1,17 +1,16 @@
-[gd_scene load_steps=4 format=3]
+[gd_scene load_steps=3 format=3]
 
-[ext_resource type="Script" path="res://ui/safe_margin.gd" id="99_safe"]
-[ext_resource type="Script" path="res://ui/trainer_select.gd" id="1_select"]
-[ext_resource type="Script" path="res://ui/choice_list.gd" id="2_list"]
+[ext_resource type="Script" path="res://ui/history.gd" id="1_script"]
+[ext_resource type="Script" path="res://ui/safe_margin.gd" id="2_safe"]
 
-[node name="TrainerSelect" type="Control"]
+[node name="History" type="Control"]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-script = ExtResource("1_select")
+script = ExtResource("1_script")
 
 [node name="Background" type="ColorRect" parent="."]
 layout_mode = 1
@@ -33,31 +32,45 @@ grow_vertical = 2
 theme_override_constants/margin_left = 16
 theme_override_constants/margin_top = 16
 theme_override_constants/margin_right = 16
-theme_override_constants/margin_bottom = 16
-script = ExtResource("99_safe")
+theme_override_constants/margin_bottom = 12
+script = ExtResource("2_safe")
 
 [node name="Layout" type="VBoxContainer" parent="Margin"]
 layout_mode = 2
-theme_override_constants/separation = 12
-alignment = 1
+theme_override_constants/separation = 10
 
 [node name="Title" type="Label" parent="Margin/Layout"]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.92549, 0.827451, 0.576471, 1)
 theme_override_font_sizes/font_size = 24
-text = "Wähle deinen Trainer"
+text = "Run-Historie"
 horizontal_alignment = 1
 
-[node name="Hint" type="Label" parent="Margin/Layout"]
+[node name="SummaryLabel" type="Label" parent="Margin/Layout"]
+unique_name_in_owner = true
 layout_mode = 2
 theme_override_colors/font_color = Color(0.678431, 0.647059, 0.768627, 1)
-theme_override_font_sizes/font_size = 13
-text = "Der Trainer hilft dir den ganzen Run über."
+theme_override_font_sizes/font_size = 12
+text = ""
 horizontal_alignment = 1
 autowrap_mode = 3
 
-[node name="Choices" type="VBoxContainer" parent="Margin/Layout"]
+[node name="Scroll" type="ScrollContainer" parent="Margin/Layout"]
+layout_mode = 2
+size_flags_vertical = 3
+horizontal_scroll_mode = 0
+
+[node name="Entries" type="VBoxContainer" parent="Margin/Layout/Scroll"]
 unique_name_in_owner = true
 layout_mode = 2
-theme_override_constants/separation = 10
-script = ExtResource("2_list")
+size_flags_horizontal = 3
+theme_override_constants/separation = 8
+
+[node name="BackButton" type="Button" parent="Margin/Layout"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 56)
+layout_mode = 2
+focus_mode = 0
+text = "Zurück"
+theme_type_variation = &"PrimaryButton"
+
