@@ -223,3 +223,15 @@ func test_ghost_round_lag_makes_opponents_come_from_earlier_rounds() -> void:
 	assert_str(run.fight()["ghost_id"]).is_equal("r1")
 	assert_str(run.fight()["ghost_id"]).is_equal("r2")
 
+
+func test_ghosts_are_matched_by_wins() -> void:
+	var ghosts: Array = []
+	for w in 6:
+		ghosts.append({"id": "w%d" % w, "round": 1, "wins": w, "team": []})
+	var run := _run(ghosts, {"ghost_match_pool": 2, "wins_to_victory": 9})
+	run.wins = 4
+	var picked: String = run.fight()["ghost_id"]
+	assert_array(["w3", "w4", "w5"]).contains([picked])
+	var fresh := _run(ghosts, {"ghost_match_pool": 1})
+	assert_str(fresh.fight()["ghost_id"]).is_equal("w0")
+

@@ -21,16 +21,20 @@
       [40, 35, 25]
     ],
     "ghost_round_lag": 0,
+    "ghost_match_pool": 5,
+    "ghosts_use_items": false,
     "trinket_every_wins": 2,
     "trinket_choices": 3
   },
   "sim": {
     "team_budget": 12,
-    "max_team_size": 9
+    "max_team_size": 9,
+    "ghosts_per_round": 60
   },
-  "ghosts": {
-    "runs": 24,
-    "rounds": 15,
-    "reroll_chance_percent": 50
+  "bots": {
+    "max_actions_per_round": 60,
+    "random_reroll_percent": 50,
+    "greedy_reroll_min_gold": 1,
+    "synergy_reroll_min_gold": 1
   }
 }

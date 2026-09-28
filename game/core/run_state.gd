@@ -28,12 +28,15 @@ var trainer := ""
 var trinkets: Array[String] = []
 var pending_trinkets: Array[String] = []  # Auswahl nach jedem zweiten Sieg, muss vor dem Kampf gewählt werden
 var bonus_gold := 0  # aus round_end-Fähigkeiten, wird zu Beginn der nächsten Runde ausgezahlt
+var logger: RunLogger  # optional, schreibt Telemetrie (Bots und echte Runs)
 
 var _db: MonsterDb
 var _rules: Dictionary
 var _combat_rules: Dictionary
 var _ghosts: Array
 var _items: ItemDb
+var _roll_bought: Array = []  # in der aktuellen Würfelrunde gekauft, für das shop-Log
+var _roll_offered: Array = []
 
 
 func _init(db: MonsterDb, balance: Dictionary, ghosts: Array, items: ItemDb = null) -> void:
@@ -95,20 +98,33 @@ func can_fight() -> bool:
 
 ## Trainer und Trinkets als Team-Fähigkeiten, jeweils mit ihrer ID.
 func team_abilities() -> Array:
+	return _abilities_of(trainer, trinkets)
+
+
+func _abilities_of(trainer_id: String, trinket_ids: Array) -> Array:
 	var result: Array = []
-	var trainer_def := _items.trainer(trainer)
+	var trainer_def := _items.trainer(trainer_id)
 	if trainer_def.has("ability"):
-		result.append(TeamAbility.tagged(trainer_def["ability"], trainer))
-	for id in trinkets:
+		result.append(TeamAbility.tagged(trainer_def["ability"], trainer_id))
+	for id: String in trinket_ids:
 		var def := _items.trinket(id)
 		if def.has("ability"):
 			result.append(TeamAbility.tagged(def["ability"], id))
 	return result
 
 
+## Geister bringen Trainer und Trinkets mit, wenn balance.json ghosts_use_items erlaubt.
+func _ghost_abilities(ghost: Dictionary) -> Array:
+	if not bool(_rules.get("ghosts_use_items", false)):
+		return []
+	return _abilities_of(ghost.get("trainer", ""), ghost.get("trinkets", []))
+
+
 func choose_trinket(id: String) -> bool:
 	if not pending_trinkets.has(id):
 		return false
+	if logger != null:
+		logger.trinket(self, pending_trinkets.duplicate(), id)
 	trinkets.append(id)
 	pending_trinkets.clear()
 	return true
@@ -140,6 +156,7 @@ func buy(offer_index: int) -> Dictionary:
 	if not can_buy(offer_index):
 		return {"ok": false}
 	var id: String = offers[offer_index]
+	_roll_bought.append(id)
 	gold -= price(offer_index)
 	offers[offer_index] = ""
 	var slot := _free_slot()
@@ -165,6 +182,8 @@ func sell(slot: int) -> int:
 	if slot < 0 or slot >= CombatSim.SLOTS or board[slot] == null:
 		return 0
 	var value := sell_value(slot)
+	if logger != null:
+		logger.sell(self, board[slot], value)
 	gold += value
 	board[slot] = null
 	return value
@@ -200,12 +219,14 @@ func fight() -> Dictionary:
 	if not can_fight():
 		push_error("Kampf nicht möglich: Run vorbei oder Trinket-Wahl offen")
 		return {}
+	_log_roll()
 	var round_end := _apply_round_end()
 	var ghost := _pick_ghost()
 	var enemy: Array = ghost.get("team", [])
 	var battle_seed := _mix(SALT_BATTLE, 0)
 	var sim := CombatSim.new(_db, _combat_rules)
-	var result := sim.simulate(team(), enemy, battle_seed, team_abilities())
+	var own_team := team()
+	var result := sim.simulate(own_team, enemy, battle_seed, team_abilities(), _ghost_abilities(ghost))
 	result["round_end"] = round_end
 	result["round"] = round_number
 	result["ghost_id"] = ghost.get("id", "")
@@ -222,6 +243,10 @@ func fight() -> Dictionary:
 		_:
 			draws += 1
 			result["result"] = "draw"
+	if logger != null:
+		logger.battle(self, own_team, result)
+		if is_over():
+			logger.run_end(self)
 	if not is_over():
 		if result["result"] == "win" and wins % maxi(int(_rules.get("trinket_every_wins", 0)), 1) == 0 \
 				and int(_rules.get("trinket_every_wins", 0)) > 0:
@@ -276,6 +301,7 @@ static func from_dict(data: Dictionary, db: MonsterDb, balance: Dictionary, ghos
 		run.trinkets.append(id)
 	for id: String in data.get("pending_trinkets", []):
 		run.pending_trinkets.append(id)
+	run._roll_offered = run.offers.filter(func(id: String) -> bool: return id != "")
 	return run
 
 
@@ -289,15 +315,27 @@ func _start_round() -> void:
 
 
 func _roll_offers() -> void:
+	_log_roll()
 	var rng := GameRng.new(_mix(SALT_SHOP, rolls))
 	rolls += 1
 	offers = []
 	for id in Shop.roll(_db, _rules, round_number, rng):
 		offers.append(id)
+	_roll_offered = offers.duplicate()
 
 
-## Gegner kommen aus Runde (aktuelle Runde - ghost_round_lag), mindestens Runde 1.
-## Die Verzögerung ist der Hebel für die Gegnerstärke (balance.json).
+## Schreibt die abgeschlossene Würfelrunde ins Log (einmal pro Wurf).
+func _log_roll() -> void:
+	if logger != null and not _roll_offered.is_empty():
+		logger.shop(self, _roll_offered, _roll_bought)
+	_roll_offered = []
+	_roll_bought = []
+
+
+## Gegner kommen aus Runde (aktuelle Runde - ghost_round_lag), mindestens Runde 1, sonst die
+## nächstniedrigere vorhandene. Mit ghost_match_pool > 0 zählen nur die Geister, deren Siege zu
+## diesem Zeitpunkt den eigenen am nächsten kommen (wie später beim asynchronen PvP).
+## Beides steht in balance.json und ist der Hebel für die Gegnerstärke.
 func _pick_ghost() -> Dictionary:
 	if _ghosts.is_empty():
 		return {}
@@ -310,6 +348,17 @@ func _pick_ghost() -> Dictionary:
 	if best_round == 0:
 		best_round = _ghosts.map(func(g: Dictionary) -> int: return int(g["round"])).min()
 	var candidates := _ghosts.filter(func(g: Dictionary) -> bool: return int(g["round"]) == best_round)
+	var pool_size := int(_rules.get("ghost_match_pool", 0))
+	if pool_size > 0 and candidates.size() > pool_size:
+		# Stabile Sortierung nach Siegabstand, bei Gleichstand bleibt die Dateireihenfolge.
+		var indexed: Array = []
+		for i in candidates.size():
+			indexed.append([absi(int(candidates[i].get("wins", 0)) - wins), i])
+		indexed.sort()
+		var nearest: Array = []
+		for entry: Array in indexed.slice(0, pool_size):
+			nearest.append(candidates[entry[1]])
+		candidates = nearest
 	return GameRng.new(_mix(SALT_GHOST, 0)).pick(candidates)
 
 

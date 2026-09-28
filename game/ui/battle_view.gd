@@ -5,15 +5,6 @@ extends Control
 const SPEEDS: Array[float] = [1.0, 2.0]
 const SKIP_SPEED := 1000.0
 
-# Abspieldauern in Sekunden bei 1x.
-const T_START := 0.6
-const T_TICK := 0.3
-const T_ATTACK := 0.24
-const T_HIT := 0.08
-const T_EFFECT := 0.18
-const T_ABILITY := 0.08
-const T_DEATH := 0.25
-const T_FLOAT := 0.7
 const FLOAT_RISE := 26.0
 
 const COLOR_DAMAGE := Color(1, 0.36, 0.36)
@@ -25,7 +16,6 @@ const FLASH_POISON := Color(0.5, 1.8, 0.5)
 const FLASH_SHIELD := Color(0.7, 1.2, 2.2)
 const FLASH_ABILITY := Color(1.8, 1.6, 0.6)
 const COLOR_ITEM := Color(0.85, 0.7, 1)
-const T_ITEM := 0.35
 
 @onready var _enemy_board: Board = %EnemyBoard
 @onready var _player_board: Board = %PlayerBoard
@@ -77,7 +67,8 @@ func _play(events: Array, generation: int) -> void:
 	for event: Dictionary in events:
 		if generation != _generation or not is_inside_tree():
 			return
-		await _play_event(event)
+		_play_event(event)
+		await _wait(BattleTiming.wait_after(event))
 	if generation == _generation:
 		_set_playing(false)
 
@@ -95,6 +86,7 @@ func _on_continue() -> void:
 	Session.goto(Session.TITLE_SCENE if Session.run.is_over() else Session.SHOP_SCENE)
 
 
+## Zeigt ein Ereignis an. Wie lange danach gewartet wird, bestimmt BattleTiming.
 func _play_event(e: Dictionary) -> void:
 	match e["ev"]:
 		"start":
@@ -102,56 +94,46 @@ func _play_event(e: Dictionary) -> void:
 			for unit: Dictionary in e["units"]:
 				var def := _db.get_def(unit["id"])
 				_cell(unit["side"], unit["slot"]).show_unit(def["sprite"], unit["hp"], unit["atk"], unit["level"], unit["side"] == 1)
-			await _wait(T_START)
 		"tick":
 			_tick_label.text = "Zug %d" % e["t"]
-			await _wait(T_TICK)
 		"attack":
 			var direction := -1.0 if e["side"] == 0 else 1.0
-			_cell(e["side"], e["slot"]).jump(direction, T_ATTACK / _speed())
-			await _wait(T_ATTACK * 0.5)
+			_cell(e["side"], e["slot"]).jump(direction, BattleTiming.T_ATTACK / _speed())
 		"damage":
 			var cell := _cell(e["side"], e["slot"])
 			cell.set_stats(e["hp"], e["shield"], e["poison"])
 			var is_poison: bool = e["kind"] == Effects.KIND_POISON
-			cell.flash(FLASH_POISON if is_poison else FLASH_HIT, T_EFFECT / _speed())
+			cell.flash(FLASH_POISON if is_poison else FLASH_HIT, BattleTiming.T_EFFECT / _speed())
 			if e["blocked"] > 0:
 				_float_text(cell, "-%d" % e["blocked"], COLOR_BLOCK)
 			if e["amount"] > 0 or e["blocked"] == 0:
 				_float_text(cell, "-%d" % e["amount"], COLOR_POISON if is_poison else COLOR_DAMAGE)
-			await _wait(T_HIT)
 		"poison":
 			var cell := _cell(e["side"], e["slot"])
 			cell.set_stats(cell.hp, cell.shield, e["total"])
-			cell.flash(FLASH_POISON, T_EFFECT / _speed())
+			cell.flash(FLASH_POISON, BattleTiming.T_EFFECT / _speed())
 			_float_text(cell, "+%d Gift" % e["amount"], COLOR_POISON)
-			await _wait(T_EFFECT)
 		"shield":
 			var cell := _cell(e["side"], e["slot"])
 			cell.set_stats(cell.hp, e["total"], cell.poison)
-			cell.flash(FLASH_SHIELD, T_EFFECT / _speed())
+			cell.flash(FLASH_SHIELD, BattleTiming.T_EFFECT / _speed())
 			_float_text(cell, "+%d Schild" % e["amount"], COLOR_BLOCK)
-			await _wait(T_EFFECT)
 		"ability":
 			var source: String = e.get("source", "")
 			if source == "":
-				_cell(e["side"], e["slot"]).flash(FLASH_ABILITY, T_EFFECT / _speed())
-				await _wait(T_ABILITY)
+				_cell(e["side"], e["slot"]).flash(FLASH_ABILITY, BattleTiming.T_EFFECT / _speed())
 			else:
 				# Trainer oder Trinket: Name über dem auslösenden Monster oder mittig über dem Raster.
 				var anchor: Control = _cell(e["side"], e["slot"]) if e["slot"] >= 0 else _board(e["side"])
 				_float_text(anchor, Session.item_def(source).get("name", source), COLOR_ITEM)
-				await _wait(T_ITEM)
 		"buff":
 			var cell := _cell(e["side"], e["slot"])
 			cell.set_atk(e["atk"])
 			cell.set_stats(e["hp"], cell.shield, cell.poison)
-			cell.flash(FLASH_ABILITY, T_EFFECT / _speed())
+			cell.flash(FLASH_ABILITY, BattleTiming.T_EFFECT / _speed())
 			_float_text(cell, "+%d %s" % [e["amount"], "Angriff" if e["stat"] == "atk" else "HP"], COLOR_ABILITY)
-			await _wait(T_EFFECT)
 		"death":
-			_cell(e["side"], e["slot"]).die(T_DEATH / _speed())
-			await _wait(T_DEATH)
+			_cell(e["side"], e["slot"]).die(BattleTiming.T_DEATH / _speed())
 		"end":
 			_show_result(e["winner"])
 
@@ -193,7 +175,7 @@ func _float_text(anchor: Control, text: String, color: Color) -> void:
 	label.size = Vector2(anchor.size.x + 32, 22)
 	label.position = anchor.global_position - _fx.global_position + Vector2(-16, anchor.size.y / 2.0 - 24)
 	var tween := label.create_tween().set_parallel()
-	var duration := T_FLOAT / _speed()
+	var duration := BattleTiming.T_FLOAT / _speed()
 	tween.tween_property(label, "position:y", label.position.y - FLOAT_RISE, duration)
 	tween.tween_property(label, "modulate:a", 0.0, duration).set_delay(duration * 0.4)
 	tween.chain().tween_callback(label.queue_free)
