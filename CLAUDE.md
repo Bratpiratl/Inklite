@@ -17,9 +17,11 @@ Der vollständige Plan mit Meilensteinen steht in PLAN.md. Arbeite immer nur am 
 
 ## Befehle
 - Tests: game/tools/run_tests.sh (ruft GdUnit4 headless mit --ignoreHeadlessMode auf und schlägt auch bei Parse-Fehlern fehl, die GdUnit4 sonst still überspringt)
-- Simulation: godot --headless --path game -s res://tools/simulate.gd -- --runs 10000
-- Geisterteams neu erzeugen (nach Änderungen an Monstern oder Shop): godot --headless --path game -s res://tools/make_ghosts.gd
-- Auswertung: python analysis/analyze.py logs/sim.jsonl
+- Simulation (Bot-Runs, schreibt logs/sim.jsonl): godot --headless --path game -s res://tools/simulate.gd -- --runs 10000
+- Kurze Simulation vor Commits (eigene Datei, überschreibt das große Log nicht): godot --headless --path game -s res://tools/simulate.gd -- --runs 300 --out ../logs/quick.jsonl
+- Zufallskämpfe mit Winrate je Monster: godot --headless --path game -s res://tools/simulate.gd -- --mode fights --runs 1000
+- Geisterteams neu erzeugen (nach Änderungen an Monstern, Shop oder Items, zweimal hintereinander, damit sie sich einpendeln): godot --headless --path game -s res://tools/simulate.gd -- --runs 3000 --ghosts
+- Auswertung: analysis/.venv/bin/python analysis/analyze.py logs/sim.jsonl (schreibt analysis/report.html; Einrichtung einmalig: python3 -m venv analysis/.venv && analysis/.venv/bin/pip install -r analysis/requirements.txt)
 
 ## Arbeitsweise
 - Vor jedem Commit Tests und eine kurze Simulation laufen lassen.

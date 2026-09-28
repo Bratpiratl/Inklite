@@ -1,18 +1,134 @@
 extends SceneTree
-## Headless-Simulation: rechnet N Zufallskämpfe und gibt pro Monster die Winrate aus.
+## Headless-Simulation.
 ##
-## Aufruf: godot --headless --path game -s res://tools/simulate.gd -- --runs 1000 [--seed 1] [--level 1]
+## Standard: komplette Bot-Runs, jedes Ereignis als JSON Line nach logs/sim.jsonl.
+##   godot --headless --path game -s res://tools/simulate.gd -- --runs 10000
+##   Optionen: --seed N, --bot random|greedy|synergy|all, --out Pfad, --ghosts (schreibt data/ghost_teams.json)
 ##
-## Jedes Team kauft zufällig Monster, bis das Budget aus balance.json (sim.team_budget) verbraucht
-## oder das Raster voll ist, und stellt sie auf zufällige Felder. So misst die Winrate, wie viel
-## ein Monster für seinen Preis leistet.
+## Zufallskämpfe mit Winrate je Monster (Kampfkern ohne Shop):
+##   godot --headless --path game -s res://tools/simulate.gd -- --mode fights --runs 1000 [--level 1]
+
+const GHOSTS_PATH := "res://data/ghost_teams.json"
+const DEFAULT_OUT := "../logs/sim.jsonl"
 
 
 func _init() -> void:
 	var args := _parse_args(OS.get_cmdline_user_args())
-	var runs: int = args.get("runs", 1000)
-	var base_seed: int = args.get("seed", 1)
-	var level: int = args.get("level", 1)
+	if args.get("mode", "runs") == "fights":
+		_simulate_fights(args)
+	else:
+		_simulate_runs(args)
+	quit()
+
+
+# --- Bot-Runs ---
+
+func _simulate_runs(args: Dictionary) -> void:
+	var runs := int(args.get("runs", 1000))
+	var base_seed := int(args.get("seed", 1))
+	var bot_arg: String = args.get("bot", "all")
+	var bot_names: Array[String] = Bots.NAMES if bot_arg == "all" else [bot_arg]
+	var out_path := ProjectSettings.globalize_path("res://").path_join(args.get("out", DEFAULT_OUT)).simplify_path()
+
+	var db := MonsterDb.from_file()
+	var items := ItemDb.from_files()
+	var balance := GameData.load_balance()
+	var ghosts: Array = GameData.load_json(GHOSTS_PATH)["teams"]
+	var ghosts_per_round := int(balance["sim"].get("ghosts_per_round", 24))
+
+	DirAccess.make_dir_recursive_absolute(out_path.get_base_dir())
+	var file := FileAccess.open(out_path, FileAccess.WRITE)
+	if file == null:
+		push_error("Log nicht schreibbar: %s" % out_path)
+		return
+	var sink := func(line: Dictionary) -> void: file.store_line(JSON.stringify(line))
+
+	var stats := {}
+	var ghost_pool := {}  # Runde -> Array von Geisterteams (Reservoir-Stichprobe)
+	var seen_per_round := {}
+	var pool_rng := GameRng.new(base_seed * 31 + 7)
+	var started := Time.get_ticks_msec()
+
+	for i in runs:
+		var bot_name: String = bot_names[i % bot_names.size()]
+		var run_seed := (base_seed * 1000003 + i) % 2147483647
+		var bot := Bots.new(bot_name, db, items, GameRng.new(run_seed ^ 0x5bd1e995), balance.get("bots", {}))
+		var run := RunState.create(db, balance, ghosts, run_seed, bot.choose_trainer(), items)
+		run.logger = RunLogger.new({"run": "%s-%06d" % [bot_name, i], "v": RunLogger.version(), "bot": bot_name}, sink)
+		while not run.is_over():
+			bot.play_shop(run)
+			_collect_ghost(ghost_pool, seen_per_round, pool_rng, ghosts_per_round, run, bot_name, i)
+			run.fight()
+		_count(stats, bot_name, run)
+
+	file.close()
+	var elapsed := Time.get_ticks_msec() - started
+	print("%d Runs in %.1f s, Log: %s" % [runs, elapsed / 1000.0, out_path])
+	_print_run_stats(stats)
+	if args.has("ghosts"):
+		_write_ghosts(ghost_pool, base_seed)
+
+
+## Nimmt das Team vor dem Kampf in eine gleichmäßige Stichprobe je Runde auf.
+func _collect_ghost(pool: Dictionary, seen: Dictionary, rng: GameRng, per_round: int, run: RunState, bot_name: String, run_index: int) -> void:
+	var r := run.round_number
+	seen[r] = seen.get(r, 0) + 1
+	var ghost := {
+		"id": "ghost_%s_%05d_%02d" % [bot_name, run_index, r], "round": r, "wins": run.wins,
+		"bot": bot_name, "trainer": run.trainer, "trinkets": run.trinkets.duplicate(), "team": run.team(),
+	}
+	if not pool.has(r):
+		pool[r] = []
+	if pool[r].size() < per_round:
+		pool[r].append(ghost)
+	else:
+		var j := rng.next_int(seen[r])
+		if j < per_round:
+			pool[r][j] = ghost
+
+
+func _write_ghosts(pool: Dictionary, base_seed: int) -> void:
+	var rounds := pool.keys()
+	rounds.sort()
+	var lines: Array[String] = []
+	for r: int in rounds:
+		for ghost: Dictionary in pool[r]:
+			lines.append("    " + JSON.stringify(ghost))
+	var file := FileAccess.open(GHOSTS_PATH, FileAccess.WRITE)
+	file.store_string('{\n  "generator": "tools/simulate.gd --ghosts (Bots: %s)",\n  "seed": %d,\n  "teams": [\n%s\n  ]\n}\n' % [
+		", ".join(Bots.NAMES), base_seed, ",\n".join(lines)])
+	file.close()
+	print("%d Geisterteams für %d Runden geschrieben: %s" % [lines.size(), rounds.size(), GHOSTS_PATH])
+
+
+func _count(stats: Dictionary, bot_name: String, run: RunState) -> void:
+	for key in ["bot:" + bot_name, "trainer:" + run.trainer, "alle"]:
+		if not stats.has(key):
+			stats[key] = {"runs": 0, "wins": 0, "victories": 0, "draws": 0}
+		stats[key]["runs"] += 1
+		stats[key]["wins"] += run.wins
+		stats[key]["draws"] += run.draws
+		stats[key]["victories"] += 1 if run.is_victory() else 0
+
+
+func _print_run_stats(stats: Dictionary) -> void:
+	print("%-18s %6s %8s %10s %8s" % ["Gruppe", "Runs", "Siege", "gewonnen", "Unent."])
+	var keys := stats.keys()
+	keys.sort()
+	for key: String in keys:
+		var s: Dictionary = stats[key]
+		var n := maxi(s["runs"], 1)
+		print("%-18s %6d %8.2f %9.1f %% %8.2f" % [key, s["runs"], float(s["wins"]) / n, 100.0 * s["victories"] / n, float(s["draws"]) / n])
+
+
+# --- Zufallskämpfe ---
+
+## Jedes Team kauft zufällig Monster, bis das Budget aus balance.json (sim.team_budget) verbraucht
+## oder das Raster voll ist. So misst die Winrate, wie viel ein Monster für seinen Preis leistet.
+func _simulate_fights(args: Dictionary) -> void:
+	var runs := int(args.get("runs", 1000))
+	var base_seed := int(args.get("seed", 1))
+	var level := int(args.get("level", 1))
 
 	var db := MonsterDb.from_file()
 	var balance := GameData.load_balance()
@@ -67,7 +183,6 @@ func _init() -> void:
 		if s["fights"] > 0 and (_rate(s) > 60.0 or _rate(s) < 40.0):
 			flag = "  <-- Warnsignal"
 		print("%-16s %-7s %4d %5d %8d %7.1f %%%s" % [id, def["type"], def["rarity"], def["cost"], s["fights"], _rate(s), flag])
-	quit()
 
 
 func _random_team(db: MonsterDb, sim_rules: Dictionary, level: int, rng: GameRng) -> Array:
@@ -98,14 +213,21 @@ func _pct(part: int, total: int) -> float:
 	return 100.0 * part / maxi(total, 1)
 
 
+## --schluessel wert, oder --schalter ohne Wert (dann true). Zahlen werden zu int.
 func _parse_args(raw: PackedStringArray) -> Dictionary:
 	var result := {}
 	var i := 0
 	while i < raw.size():
 		var key := raw[i]
-		if key.begins_with("--") and i + 1 < raw.size():
-			result[key.substr(2)] = int(raw[i + 1])
+		if not key.begins_with("--"):
+			i += 1
+			continue
+		var name := key.substr(2)
+		if i + 1 < raw.size() and not raw[i + 1].begins_with("--"):
+			var value := raw[i + 1]
+			result[name] = int(value) if value.is_valid_int() else value
 			i += 2
 		else:
+			result[name] = true
 			i += 1
 	return result
