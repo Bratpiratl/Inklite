@@ -1,5 +1,6 @@
-[gd_scene load_steps=11 format=3]
+[gd_scene load_steps=12 format=3]
 
+[ext_resource type="PackedScene" path="res://ui/info_card.tscn" id="97_card"]
 [ext_resource type="Texture2D" path="res://assets/ui/panel_danger.png" id="7_danger"]
 [ext_resource type="Script" path="res://ui/safe_margin.gd" id="99_safe"]
 [ext_resource type="Script" path="res://ui/shop.gd" id="1_shop"]
@@ -79,12 +80,19 @@ theme_override_constants/separation = 6
 layout_mode = 2
 size_flags_horizontal = 3
 
+[node name="HelpButton" type="Button" parent="Margin/Layout/ItemBar"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(48, 48)
+layout_mode = 2
+focus_mode = 0
+text = "?"
+
 [node name="MenuButton" type="Button" parent="Margin/Layout/ItemBar"]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(80, 48)
 layout_mode = 2
 focus_mode = 0
-text = "Menü"
+text = "BTN_MENU"
 
 [node name="TopSpacer" type="Control" parent="Margin/Layout"]
 layout_mode = 2
@@ -92,7 +100,7 @@ size_flags_vertical = 3
 
 [node name="FrontCaption" type="Label" parent="Margin/Layout"]
 layout_mode = 2
-text = "vorne: wird zuerst getroffen"
+text = "SHOP_FRONT"
 label_settings = SubResource("caption")
 horizontal_alignment = 1
 
@@ -105,11 +113,11 @@ floor_texture = ExtResource("4_floor")
 
 [node name="InfoLabel" type="Label" parent="Margin/Layout"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(0, 58)
+custom_minimum_size = Vector2(0, 40)
 layout_mode = 2
 theme_override_colors/font_color = Color(0.878431, 0.858824, 0.929412, 1)
 theme_override_font_sizes/font_size = 13
-text = "Info"
+text = ""
 horizontal_alignment = 1
 vertical_alignment = 1
 autowrap_mode = 3
@@ -128,7 +136,7 @@ theme_override_constants/separation = 8
 
 [node name="ShopCaption" type="Label" parent="Margin/Layout/BottomArea/ShopArea"]
 layout_mode = 2
-text = "Shop"
+text = "SHOP_CAPTION"
 label_settings = SubResource("caption")
 horizontal_alignment = 1
 
@@ -149,7 +157,7 @@ layout_mode = 2
 size_flags_horizontal = 3
 focus_mode = 0
 theme_override_font_sizes/font_size = 17
-text = "Neu würfeln (1)"
+text = "SHOP_REROLL"
 
 [node name="FightButton" type="Button" parent="Margin/Layout/BottomArea/ShopArea/Buttons"]
 unique_name_in_owner = true
@@ -159,7 +167,7 @@ size_flags_horizontal = 3
 focus_mode = 0
 theme_override_font_sizes/font_size = 19
 theme_type_variation = &"PrimaryButton"
-text = "Kampf!"
+text = "SHOP_FIGHT"
 
 [node name="SellZone" type="PanelContainer" parent="Margin/Layout/BottomArea"]
 unique_name_in_owner = true
@@ -173,9 +181,29 @@ unique_name_in_owner = true
 layout_mode = 2
 mouse_filter = 2
 theme_override_font_sizes/font_size = 17
-text = "Hier ablegen zum Verkaufen"
+text = "SHOP_SELL_DROP_SHORT"
 horizontal_alignment = 1
 vertical_alignment = 1
+
+[node name="CardLayer" type="MarginContainer" parent="."]
+layout_mode = 1
+anchors_preset = 12
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = -12.0
+grow_horizontal = 2
+grow_vertical = 0
+mouse_filter = 2
+theme_override_constants/margin_left = 12
+theme_override_constants/margin_right = 12
+theme_override_constants/margin_bottom = 12
+script = ExtResource("99_safe")
+
+[node name="InfoCard" parent="CardLayer" instance=ExtResource("97_card")]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 8
 
 [node name="TrinketOverlay" type="Control" parent="."]
 unique_name_in_owner = true
@@ -218,14 +246,14 @@ alignment = 1
 layout_mode = 2
 theme_override_colors/font_color = Color(0.92549, 0.827451, 0.576471, 1)
 theme_override_font_sizes/font_size = 22
-text = "Wähle ein Trinket"
+text = "TRINKET_TITLE"
 horizontal_alignment = 1
 
 [node name="Hint" type="Label" parent="TrinketOverlay/Margin/Layout"]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.678431, 0.647059, 0.768627, 1)
 theme_override_font_sizes/font_size = 13
-text = "Belohnung für deine Siege. Trinkets wirken den ganzen Run."
+text = "TRINKET_HINT"
 horizontal_alignment = 1
 autowrap_mode = 3
 

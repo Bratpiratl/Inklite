@@ -1,0 +1,188 @@
+keys,de,en
+TITLE_SUBTITLE,Monster-Autobattler,Monster auto-battler
+BTN_CONTINUE,Weiter,Continue
+BTN_NEW_RUN,Neuer Run,New run
+BTN_HISTORY,Historie,History
+BTN_SETTINGS,Einstellungen,Settings
+BTN_HELP,Anleitung,How to play
+BTN_BACK,Zurück,Back
+BTN_MENU,Menü,Menu
+BTN_CLOSE,X,X
+BTN_OK,Verstanden,Got it
+VERSION,Version {v},Version {v}
+ORIENTATION,Bitte dreh dein Gerät ins Hochformat.,Please turn your device to portrait.
+LEVEL_SHORT,St.{n},Lv{n}
+COST,{n} Gold,{n} gold
+HUD_LIVES,Leben {n},Lives {n}
+HUD_WINS,Siege {n}/{max},Wins {n}/{max}
+HUD_GOLD,Gold {n},Gold {n}
+HUD_ROUND,Runde {n},Round {n}
+HUD_LIVES_T,Leben,Lives
+HUD_LIVES_INFO,Jede Niederlage kostet ein Leben. Bei 0 ist der Run vorbei. Unentschieden kosten nichts.,Every loss costs one life. At 0 the run is over. Draws cost nothing.
+HUD_WINS_T,Siege,Wins
+HUD_WINS_INFO,Mit {max} Siegen gewinnst du den Run. Nach jedem zweiten Sieg wählst du ein Trinket.,Reach {max} wins to win the run. After every second win you pick a trinket.
+HUD_GOLD_T,Gold,Gold
+HUD_GOLD_INFO,"Jede Runde gibt neues Gold, jede Runde etwas mehr. Übriges Gold verfällt am Rundenende, also ausgeben!","Each round gives fresh gold, a little more every round. Leftover gold is lost at the end of the round, so spend it!"
+HUD_ROUND_T,Runde,Round
+HUD_ROUND_INFO,"Mit jeder Runde werden die Gegner stärker, und der Shop bietet seltenere Monster an.",Every round the enemies get stronger and the shop offers rarer monsters.
+SHOP_FRONT,vorne: wird zuerst getroffen,front: gets hit first
+SHOP_CAPTION,Shop,Shop
+SHOP_REROLL,Neu würfeln ({cost}),Reroll ({cost})
+SHOP_FIGHT,Kampf!,Fight!
+SHOP_SELL_DROP,"Hier ablegen zum Verkaufen
++{gold} Gold","Drop here to sell
++{gold} gold"
+SHOP_SELL_DROP_SHORT,Hier ablegen zum Verkaufen,Drop here to sell
+SHOP_SOLD,{name} verkauft für {gold} Gold.,Sold {name} for {gold} gold.
+SHOP_MERGED,Verschmolzen zu Stufe {level}!,Merged into level {level}!
+SHOP_HINT,"Tippe auf Monster, Symbole oder die Leiste oben, um mehr zu erfahren.","Tap monsters, icons or the bar at the top to learn more."
+SHOP_NEW_ITEM,Neu im Team,New for your team
+CARD_SUB_MONSTER,"{type}, Stufe {level}, Seltenheit {rarity}","{type}, level {level}, rarity {rarity}"
+CARD_STATS,{atk} Angriff   {hp} HP,{atk} attack   {hp} HP
+CARD_BONUS,"Dauerhafter Bonus: +{atk} Angriff, +{hp} HP","Permanent bonus: +{atk} attack, +{hp} HP"
+CARD_BUY,Kaufen ({cost} Gold),Buy ({cost} gold)
+CARD_NO_GOLD,Zu wenig Gold.,Not enough gold.
+CARD_NO_SPACE,Kein Platz. Verkaufe zuerst ein Monster.,No space. Sell a monster first.
+CARD_SELL,Verkaufen (+{gold}),Sell (+{gold})
+CARD_COPIES,Du hast {n} davon auf Stufe 1. Bei 3 verschmelzen sie zu Stufe 2.,You have {n} of these at level 1. At 3 they merge into level 2.
+CARD_TRAINER,"Trainer, wirkt den ganzen Run","Trainer, active all run"
+CARD_TRINKET,"Trinket, wirkt den ganzen Run","Trinket, active all run"
+CARD_CURRENT,Aktueller Stand im Kampf,Current state in battle
+CARD_STATUS,"Schild {shield}, Gift {poison}","Shield {shield}, poison {poison}"
+TRINKET_TITLE,Wähle ein Trinket,Choose a trinket
+TRINKET_HINT,Belohnung für deine Siege. Trinkets wirken den ganzen Run.,A reward for your wins. Trinkets last the whole run.
+TRAINER_TITLE,Wähle deinen Trainer,Choose your trainer
+TRAINER_HINT,Der Trainer hilft dir den ganzen Run über.,Your trainer helps you for the whole run.
+BATTLE_ROUND,Runde {n},Round {n}
+BATTLE_TURN,Zug {n},Turn {n}
+BATTLE_ENEMY,Gegner,Enemy
+BATTLE_TEAM,Dein Team,Your team
+BATTLE_SKIP,Überspringen,Skip
+BATTLE_REPLAY,Nochmal,Replay
+BATTLE_WIN,Sieg!,Victory!
+BATTLE_LOSS,Niederlage,Defeat
+BATTLE_DRAW,Unentschieden,Draw
+BATTLE_RUN_WON,"Run gewonnen! {wins} Siege, {lives} Leben übrig.","Run won! {wins} wins, {lives} lives left."
+BATTLE_RUN_LOST,Keine Leben mehr. Run vorbei mit {wins} Siegen.,Out of lives. Run over with {wins} wins.
+BATTLE_STATUS,"Siege {wins}/{max}, Leben {lives}","Wins {wins}/{max}, lives {lives}"
+FLOAT_POISON,+{n} Gift,+{n} poison
+FLOAT_SHIELD,+{n} Schild,+{n} shield
+FLOAT_ATK,+{n} Angriff,+{n} attack
+FLOAT_HP,+{n} HP,+{n} HP
+ROUND_END_GOLD,{item}: +{n} Gold nächste Runde,{item}: +{n} gold next round
+ROUND_END_ATK,{item}: +{n} Angriff für {monster},{item}: +{n} attack for {monster}
+ROUND_END_HP,{item}: +{n} HP für {monster},{item}: +{n} HP for {monster}
+SETTINGS_MUSIC,Musik,Music
+SETTINGS_SFX,Effekte,Sound effects
+SETTINGS_SPEED,Kampftempo,Battle speed
+SETTINGS_LANGUAGE,Sprache,Language
+SETTINGS_TIPS,Tipps,Tips
+SETTINGS_TIPS_RESET,Tipps wieder zeigen,Show tips again
+SETTINGS_TIPS_DONE,Die Tipps erscheinen wieder.,Tips will show again.
+LANG_DE,Deutsch,Deutsch
+LANG_EN,English,English
+DEBUG_TITLE,Debug,Debug
+DEBUG_EXPORT,Telemetrie exportieren,Export telemetry
+DEBUG_CLEAR,Telemetrie löschen,Delete telemetry
+DEBUG_STATUS,Version {v}. Telemetrie: {events} Ereignisse aus {runs} fertigen Runs. Bleibt auf diesem Gerät.,Version {v}. Telemetry: {events} events from {runs} finished runs. Stays on this device.
+DEBUG_EMPTY,Noch keine Telemetrie vorhanden.,No telemetry yet.
+DEBUG_EXPORTED,Export gestartet: {file},Export started: {file}
+DEBUG_PATH,Datei liegt unter {path},File is at {path}
+HISTORY_TITLE,Run-Historie,Run history
+HISTORY_EMPTY,Noch keine Runs beendet.,No finished runs yet.
+HISTORY_SUMMARY,"{runs} Runs, {won} gewonnen, beste {best} Siege, Schnitt {avg}","{runs} runs, {won} won, best {best} wins, average {avg}"
+HISTORY_WON,Run gewonnen! {wins} Siege,Run won! {wins} wins
+HISTORY_WINS,{wins} Siege,{wins} wins
+HISTORY_META,"{date}, Runde {round}, {trainer}","{date}, round {round}, {trainer}"
+TIP_TITLE,Tipp,Tip
+TIP_SHOP,"Tippe ein Angebot oder Monster an, um es anzusehen, und kaufe oder verkaufe über den Knopf unten. Ziehe Monster auf dem Raster, um sie umzustellen: Die vordere Reihe wird zuerst getroffen.","Tap an offer or monster to inspect it, then buy or sell with the button at the bottom. Drag monsters on the grid to rearrange them: the front row gets hit first."
+TIP_FULL,"Dein Raster ist voll. Verkaufe schwache Monster (antippen oder nach unten ziehen), um stärkere zu kaufen. Drei gleiche verschmelzen auch bei vollem Raster.",Your grid is full. Sell weak monsters (tap them or drag them down) to buy stronger ones. Three of a kind still merge on a full grid.
+TIP_TRINKET,"Trainer und Trinkets stehen oben in der Leiste. Tippe ein Symbol an, um nachzulesen, was es tut.",Your trainer and trinkets sit in the bar at the top. Tap an icon to read what it does.
+TIP_BATTLE,"Der Kampf läuft von allein. Tippe ein Monster an, um seine aktuellen Werte zu sehen.",The battle plays itself. Tap a monster to see its current stats.
+ABILITY_NONE,Keine Fähigkeit.,No ability.
+ABILITY_SENTENCE,{trigger}: {effect}.,{trigger}: {effect}.
+TRIGGER_battle_start,Kampfstart,Battle start
+TRIGGER_on_attack,Beim Angriff,On attack
+TRIGGER_on_hurt,Wenn getroffen,When hurt
+TRIGGER_on_death,Beim Tod,On death
+TRIGGER_round_end,Rundenende,End of round
+TEAM_on_attack,Wenn ein {who} angreift,When {who} attacks
+TEAM_on_hurt,Wenn ein {who} getroffen wird,When {who} is hurt
+TEAM_on_death,Wenn ein {who} stirbt,When {who} dies
+WHO_TYPE,{type}-Monster,a {type} monster
+WHO_ROW,Monster in der {row} Reihe,a {row}-row monster
+WHO_ANY,Verbündeter,an ally
+ROW_0,vorderen,front
+ROW_1,mittleren,middle
+ROW_2,hinteren,back
+ONLY_ROW,{row} Reihe,{row} row
+ONLY,{target} (nur {what}),{target} (only {what})
+PERMANENT,dauerhaft {x},permanently {x}
+EFFECT_poison,{value} Gift auf {target},{value} poison on {target}
+EFFECT_shield,{value} Schild für {target},{value} shield for {target}
+EFFECT_damage,{value} Schaden an {target},{value} damage to {target}
+EFFECT_buff_atk,+{value} Angriff für {target},+{value} attack for {target}
+EFFECT_buff_hp,+{value} HP für {target},+{value} HP for {target}
+EFFECT_gold,+{value} Gold in der nächsten Runde,+{value} gold next round
+TARGET_self,sich,itself
+TARGET_target,das Ziel,the target
+TARGET_attacker,den Angreifer,the attacker
+TARGET_allies_all,alle Verbündeten,all allies
+TARGET_allies_row,die eigene Reihe,its own row
+TARGET_allies_front,die vordere Reihe,the front row
+TARGET_ally_random,einen zufälligen Verbündeten,a random ally
+TARGET_enemies_all,alle Gegner,all enemies
+TARGET_enemies_front,die vorderste Gegnerreihe,the enemy front row
+TARGET_enemy_front,den vordersten Gegner,the nearest front enemy
+TARGET_enemy_random,einen zufälligen Gegner,a random enemy
+KW_poison,"Gift: Am Ende jedes Zugs verliert das Monster so viele HP, wie es Gift hat. Gift stapelt sich, bleibt bis zum Kampfende und geht durch Schild.","Poison: at the end of every turn the monster loses HP equal to its poison. Poison stacks, lasts until the battle ends and ignores shield."
+KW_shield,"Schild: Fängt Schaden ab, bevor HP verloren gehen, bis er aufgebraucht ist.","Shield: absorbs damage before HP is lost, until it is used up."
+KW_damage,Schaden: Direkter Schaden durch eine Fähigkeit. Schild fängt ihn ab.,Damage: direct damage from an ability. Shield absorbs it.
+KW_buff_atk,Angriff: So viel Schaden macht ein Monster pro Angriff.,Attack: how much damage a monster deals per attack.
+KW_buff_hp,HP: Lebenspunkte. Bei 0 scheidet das Monster aus.,HP: hit points. At 0 the monster is out.
+KW_gold,Gold: Bonus-Gold kommt zu Beginn der nächsten Runde dazu.,Gold: bonus gold is added at the start of the next round.
+KW_battle_start,"Kampfstart: Wirkt einmal, bevor der erste Angriff fällt.",Battle start: triggers once before the first attack.
+KW_on_attack,"Beim Angriff: Wirkt jedes Mal, nachdem das Monster angegriffen hat.",On attack: triggers every time after the monster attacks.
+KW_on_hurt,"Wenn getroffen: Wirkt, wenn das Monster einen Angriff überlebt.",When hurt: triggers when the monster survives an attack.
+KW_on_death,"Beim Tod: Wirkt, wenn das Monster ausscheidet.",On death: triggers when the monster is knocked out.
+KW_round_end,"Rundenende: Wirkt, wenn du im Shop auf Kampf tippst. Boni bleiben dauerhaft.",End of round: triggers when you tap Fight in the shop. Bonuses are permanent.
+KW_level,Stufe: Drei gleiche Monster derselben Stufe verschmelzen zur nächsten Stufe (bis 3). Werte verdoppeln sich.,Level: three identical monsters of the same level merge into the next level (up to 3). Stats double.
+KW_front,"Vorne: Angegriffen wird immer die vorderste besetzte Reihe, bevorzugt die nächste Spalte.","Front: attacks always hit the frontmost occupied row, preferring the nearest column."
+HELP_TITLE,Anleitung,How to play
+HELP_GOAL_T,Ziel,Goal
+HELP_GOAL,"Gewinne {wins} Kämpfe, bevor deine {lives} Leben aufgebraucht sind.",Win {wins} battles before your {lives} lives run out.
+HELP_ROUND_T,Eine Runde,A round
+HELP_ROUND,"Im Shop kaufst du Monster mit Gold und stellst sie auf. Mit Kampf! tritt dein Team automatisch gegen das gespeicherte Team eines Gegners an, der gerade ähnlich weit ist.",In the shop you buy monsters with gold and place them. Tap Fight! and your team battles the saved team of an opponent who is about as far as you.
+HELP_GRID_T,Raster und Reihen,Grid and rows
+HELP_GRID,"Dein Team steht auf einem 3x3-Raster. Die vordere Reihe wird zuerst getroffen, also gehören robuste Monster nach vorne. In jedem Zug greift jedes Monster einmal an, Feld für Feld.","Your team stands on a 3x3 grid. The front row gets hit first, so sturdy monsters belong in front. Every turn each monster attacks once, square by square."
+HELP_MERGE_T,Verschmelzen,Merging
+HELP_MERGE,"Kaufst du drei gleiche Monster, verschmelzen sie zu Stufe 2 mit doppelten Werten. Drei auf Stufe 2 ergeben Stufe 3.",Buy three identical monsters and they merge into level 2 with doubled stats. Three at level 2 make level 3.
+HELP_ITEMS_T,Trainer und Trinkets,Trainers and trinkets
+HELP_ITEMS,"Zu Beginn wählst du einen Trainer, nach jedem zweiten Sieg ein Trinket. Beide wirken den ganzen Run.","At the start you pick a trainer, after every second win a trinket. Both last the whole run."
+HELP_TIPS_T,Tipps,Tips
+HELP_TIPS,"Gold verfällt am Rundenende. Ist das Raster voll, tausche schwache gegen seltenere Monster. Achte auf Typen, die zu deinem Trainer passen.","Gold is lost at the end of the round. When the grid is full, swap weak monsters for rarer ones. Look for types that suit your trainer."
+HELP_KEYWORDS_T,Schlüsselwörter,Keywords
+MONSTER_ember_pup,Glutwelpe,Ember Pup
+MONSTER_cinder_ram,Aschbock,Cinder Ram
+MONSTER_blaze_drake,Loderdrache,Blaze Drake
+MONSTER_drop_snail,Tropfschnecke,Drop Snail
+MONSTER_tide_crab,Gezeitenkrebs,Tide Crab
+MONSTER_deep_whale,Tiefenwal,Deep Whale
+MONSTER_moss_toad,Moosunke,Moss Toad
+MONSTER_spore_moth,Sporenmotte,Spore Moth
+MONSTER_thorn_golem,Dornengolem,Thorn Golem
+MONSTER_bolt_bat,Blitzfledermaus,Bolt Bat
+MONSTER_spark_ferret,Funkenfrettchen,Spark Ferret
+MONSTER_storm_lynx,Sturmluchs,Storm Lynx
+TYPE_feuer,Feuer,Fire
+TYPE_wasser,Wasser,Water
+TYPE_moos,Moos,Moss
+TYPE_blitz,Blitz,Bolt
+TRAINER_olm,Moorhüter Olm,Olm the Bogwarden
+TRAINER_asha,Funkenschmiedin Asha,Asha the Sparksmith
+TRINKET_oak_shield,Eichenschild,Oak Shield
+TRINKET_ember_elixir,Glutelixier,Ember Elixir
+TRINKET_thorn_hammer,Dornenhammer,Thorn Hammer
+TRINKET_throwing_axe,Wurfaxt,Throwing Axe
+TRINKET_soul_draught,Seelentrank,Soul Draught
+TRINKET_gold_chest,Goldtruhe,Gold Chest

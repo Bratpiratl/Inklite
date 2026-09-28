@@ -14,6 +14,7 @@ Der vollständige Plan mit Meilensteinen steht in PLAN.md. Arbeite immer nur am 
 - Nur Assets aus assets/CREDITS.md verwenden. Neue Assets dort mit Quelle und Lizenz eintragen.
 - Eigene Monster-Namen und Designs, keine Anlehnung an bestehende Marken.
 - Keine langen Gedankenstriche in Texten und Kommentaren.
+- Alle sichtbaren Texte über data/translations.csv (Spalten de und en, benannte Platzhalter wie {wins}), in Szenen als Schlüssel, im Code über Loc.t(). Keine festen Texte in der Oberfläche.
 
 ## Befehle
 - Tests: game/tools/run_tests.sh (ruft GdUnit4 headless mit --ignoreHeadlessMode auf und schlägt auch bei Parse-Fehlern fehl, die GdUnit4 sonst still überspringt)

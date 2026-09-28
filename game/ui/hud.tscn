@@ -3,41 +3,78 @@
 [ext_resource type="Script" path="res://ui/hud.gd" id="1_hud"]
 
 [node name="Hud" type="HBoxContainer"]
-custom_minimum_size = Vector2(0, 32)
+custom_minimum_size = Vector2(0, 44)
 theme_override_constants/separation = 4
 script = ExtResource("1_hud")
 
-[node name="LivesLabel" type="Label" parent="."]
+[node name="LivesLabel" type="Button" parent="."]
 unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 44)
 layout_mode = 2
+focus_mode = 0
 size_flags_horizontal = 3
 theme_override_colors/font_color = Color(1, 0.462745, 0.462745, 1)
+theme_override_colors/font_outline_color = Color(0.0784314, 0.0588235, 0.117647, 1)
+theme_override_constants/outline_size = 4
+theme_override_colors/font_hover_color = Color(1, 0.462745, 0.462745, 1)
+theme_override_colors/font_pressed_color = Color(1, 0.462745, 0.462745, 1)
+theme_override_colors/font_hover_pressed_color = Color(1, 0.462745, 0.462745, 1)
+theme_override_colors/font_focus_color = Color(1, 0.462745, 0.462745, 1)
 theme_override_font_sizes/font_size = 15
-text = "Leben 5"
+flat = true
+text = "HUD_LIVES_T"
+alignment = 0
 
-[node name="WinsLabel" type="Label" parent="."]
+[node name="WinsLabel" type="Button" parent="."]
 unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 44)
 layout_mode = 2
+focus_mode = 0
 size_flags_horizontal = 3
 theme_override_colors/font_color = Color(0.92549, 0.827451, 0.576471, 1)
+theme_override_colors/font_outline_color = Color(0.0784314, 0.0588235, 0.117647, 1)
+theme_override_constants/outline_size = 4
+theme_override_colors/font_hover_color = Color(0.92549, 0.827451, 0.576471, 1)
+theme_override_colors/font_pressed_color = Color(0.92549, 0.827451, 0.576471, 1)
+theme_override_colors/font_hover_pressed_color = Color(0.92549, 0.827451, 0.576471, 1)
+theme_override_colors/font_focus_color = Color(0.92549, 0.827451, 0.576471, 1)
 theme_override_font_sizes/font_size = 15
-text = "Siege 0/10"
-horizontal_alignment = 1
+flat = true
+text = "HUD_WINS_T"
+alignment = 1
 
-[node name="GoldLabel" type="Label" parent="."]
+[node name="GoldLabel" type="Button" parent="."]
 unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 44)
 layout_mode = 2
+focus_mode = 0
 size_flags_horizontal = 3
 theme_override_colors/font_color = Color(1, 0.831373, 0.380392, 1)
+theme_override_colors/font_outline_color = Color(0.0784314, 0.0588235, 0.117647, 1)
+theme_override_constants/outline_size = 4
+theme_override_colors/font_hover_color = Color(1, 0.831373, 0.380392, 1)
+theme_override_colors/font_pressed_color = Color(1, 0.831373, 0.380392, 1)
+theme_override_colors/font_hover_pressed_color = Color(1, 0.831373, 0.380392, 1)
+theme_override_colors/font_focus_color = Color(1, 0.831373, 0.380392, 1)
 theme_override_font_sizes/font_size = 15
-text = "Gold 0"
-horizontal_alignment = 1
+flat = true
+text = "HUD_GOLD_T"
+alignment = 1
 
-[node name="RoundLabel" type="Label" parent="."]
+[node name="RoundLabel" type="Button" parent="."]
 unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 44)
 layout_mode = 2
+focus_mode = 0
 size_flags_horizontal = 3
 theme_override_colors/font_color = Color(0.678431, 0.647059, 0.768627, 1)
+theme_override_colors/font_outline_color = Color(0.0784314, 0.0588235, 0.117647, 1)
+theme_override_constants/outline_size = 4
+theme_override_colors/font_hover_color = Color(0.678431, 0.647059, 0.768627, 1)
+theme_override_colors/font_pressed_color = Color(0.678431, 0.647059, 0.768627, 1)
+theme_override_colors/font_hover_pressed_color = Color(0.678431, 0.647059, 0.768627, 1)
+theme_override_colors/font_focus_color = Color(0.678431, 0.647059, 0.768627, 1)
 theme_override_font_sizes/font_size = 15
-text = "Runde 1"
-horizontal_alignment = 2
+flat = true
+text = "HUD_ROUND_T"
+alignment = 2

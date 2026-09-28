@@ -31,6 +31,11 @@ const EMPTY_FLOOR := Color(0.55, 0.55, 0.6)
 @onready var _hp_lag: ColorRect = %HpLag
 
 var slot := -1
+var unit_id := ""
+var level := 1
+var atk := 0
+## Im Kampf nur antippbar, im Shop auch ziehbar.
+var draggable := true
 var hp := 0
 var shield := 0
 var poison := 0
@@ -52,7 +57,10 @@ func set_interactive(value: bool) -> void:
 	mouse_filter = Control.MOUSE_FILTER_STOP if value else Control.MOUSE_FILTER_IGNORE
 
 
-func show_unit(sprite_path: String, start_hp: int, atk: int, level: int, flip: bool) -> void:
+func show_unit(id: String, sprite_path: String, start_hp: int, start_atk: int, unit_level: int, flip: bool) -> void:
+	unit_id = id
+	level = unit_level
+	atk = start_atk
 	_stop_tweens()
 	_has_unit = true
 	_floor.modulate = Color.WHITE
@@ -64,7 +72,7 @@ func show_unit(sprite_path: String, start_hp: int, atk: int, level: int, flip: b
 	_sprite.texture = load(SPRITE_ROOT + sprite_path)
 	_sprite.flip_h = flip
 	_atk_label.text = str(atk)
-	_level_label.text = "St.%d" % level
+	_level_label.text = Loc.t("LEVEL_SHORT", {"n": level})
 	_level_label.visible = level > 1
 	max_hp = maxi(start_hp, 1)
 	_hp_bar.visible = show_hp_bar
@@ -91,7 +99,8 @@ func set_stats(new_hp: int, new_shield: int, new_poison: int) -> void:
 	_update_hp_bar()
 
 
-func set_atk(atk: int) -> void:
+func set_atk(value: int) -> void:
+	atk = value
 	_atk_label.text = str(atk)
 
 
@@ -168,8 +177,12 @@ func _gui_input(event: InputEvent) -> void:
 		accept_event()
 
 
+func has_unit() -> bool:
+	return _has_unit
+
+
 func _get_drag_data(_at_position: Vector2) -> Variant:
-	if not _interactive or not _has_unit:
+	if not _interactive or not draggable or not _has_unit:
 		return null
 	var preview := Control.new()
 	var image := TextureRect.new()
@@ -184,7 +197,7 @@ func _get_drag_data(_at_position: Vector2) -> Variant:
 
 
 func _can_drop_data(_at_position: Vector2, data: Variant) -> bool:
-	return _interactive and data is Dictionary and data.get("kind", "") == DRAG_KIND
+	return _interactive and draggable and data is Dictionary and data.get("kind", "") == DRAG_KIND
 
 
 func _drop_data(_at_position: Vector2, data: Variant) -> void:

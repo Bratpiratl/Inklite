@@ -64,7 +64,7 @@ horizontal_alignment = 1
 [node name="Subtitle" type="Label" parent="Margin/Layout"]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.678431, 0.647059, 0.768627, 1)
-text = "Monster-Autobattler"
+text = "TITLE_SUBTITLE"
 horizontal_alignment = 1
 
 [node name="Parade" type="HBoxContainer" parent="Margin/Layout"]
@@ -85,7 +85,7 @@ size_flags_horizontal = 4
 focus_mode = 0
 theme_type_variation = &"PrimaryButton"
 theme_override_font_sizes/font_size = 24
-text = "Weiter"
+text = "BTN_CONTINUE"
 
 [node name="StartButton" type="Button" parent="Margin/Layout"]
 unique_name_in_owner = true
@@ -94,7 +94,7 @@ layout_mode = 2
 size_flags_horizontal = 4
 focus_mode = 0
 theme_override_font_sizes/font_size = 24
-text = "Neuer Run"
+text = "BTN_NEW_RUN"
 
 [node name="HistoryButton" type="Button" parent="Margin/Layout"]
 unique_name_in_owner = true
@@ -102,7 +102,15 @@ custom_minimum_size = Vector2(240, 52)
 layout_mode = 2
 size_flags_horizontal = 4
 focus_mode = 0
-text = "Historie"
+text = "BTN_HISTORY"
+
+[node name="HelpButton" type="Button" parent="Margin/Layout"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(240, 52)
+layout_mode = 2
+size_flags_horizontal = 4
+focus_mode = 0
+text = "BTN_HELP"
 
 [node name="SettingsButton" type="Button" parent="Margin/Layout"]
 unique_name_in_owner = true
@@ -110,7 +118,7 @@ custom_minimum_size = Vector2(240, 52)
 layout_mode = 2
 size_flags_horizontal = 4
 focus_mode = 0
-text = "Einstellungen"
+text = "BTN_SETTINGS"
 
 [node name="BottomSpacer" type="Control" parent="Margin/Layout"]
 layout_mode = 2
@@ -121,5 +129,5 @@ unique_name_in_owner = true
 layout_mode = 2
 theme_override_colors/font_color = Color(0.45098, 0.419608, 0.521569, 1)
 theme_override_font_sizes/font_size = 8
-text = "Version"
+text = ""
 horizontal_alignment = 1

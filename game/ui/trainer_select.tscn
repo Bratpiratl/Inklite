@@ -45,14 +45,14 @@ alignment = 1
 layout_mode = 2
 theme_override_colors/font_color = Color(0.92549, 0.827451, 0.576471, 1)
 theme_override_font_sizes/font_size = 24
-text = "Wähle deinen Trainer"
+text = "TRAINER_TITLE"
 horizontal_alignment = 1
 
 [node name="Hint" type="Label" parent="Margin/Layout"]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.678431, 0.647059, 0.768627, 1)
 theme_override_font_sizes/font_size = 13
-text = "Der Trainer hilft dir den ganzen Run über."
+text = "TRAINER_HINT"
 horizontal_alignment = 1
 autowrap_mode = 3
 

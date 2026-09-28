@@ -68,5 +68,5 @@ grow_vertical = 0
 mouse_filter = 2
 theme_override_colors/font_color = Color(1, 0.831373, 0.380392, 1)
 theme_override_font_sizes/font_size = 12
-text = "3 Gold"
+text = ""
 horizontal_alignment = 1

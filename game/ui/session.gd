@@ -11,6 +11,7 @@ const BATTLE_SCENE := "res://ui/battle_view.tscn"
 const TRAINER_SCENE := "res://ui/trainer_select.tscn"
 const SETTINGS_SCENE := "res://ui/settings.tscn"
 const HISTORY_SCENE := "res://ui/history.tscn"
+const HELP_SCENE := "res://ui/help.tscn"
 const SPRITE_ROOT := "res://assets/sprites/"
 
 var db: MonsterDb
@@ -19,6 +20,7 @@ var balance: Dictionary
 var ghosts: Array = []
 var run: RunState
 var last_battle: Dictionary = {}
+var help_return := TITLE_SCENE
 
 
 func _ready() -> void:
@@ -94,6 +96,12 @@ func item_def(id: String) -> Dictionary:
 
 func item_texture(id: String) -> Texture2D:
 	return load(SPRITE_ROOT + item_def(id)["sprite"])
+
+
+## Anleitung öffnen; "Zurück" führt dorthin, woher man kam.
+func open_help(return_scene: String) -> void:
+	help_return = return_scene
+	goto(HELP_SCENE)
 
 
 func goto(scene_path: String) -> void:

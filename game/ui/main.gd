@@ -19,7 +19,8 @@ func _ready() -> void:
 	_start.pressed.connect(func() -> void: Session.goto(Session.TRAINER_SCENE))
 	%HistoryButton.pressed.connect(func() -> void: Session.goto(Session.HISTORY_SCENE))
 	%SettingsButton.pressed.connect(func() -> void: Session.goto(Session.SETTINGS_SCENE))
-	%VersionLabel.text = "Version %s" % RunLogger.version()
+	%HelpButton.pressed.connect(func() -> void: Session.open_help(Session.TITLE_SCENE))
+	%VersionLabel.text = Loc.t("VERSION", {"v": RunLogger.version()})
 	_build_parade()
 	Audio.play_music("menu")
 

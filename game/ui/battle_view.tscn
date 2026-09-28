@@ -1,5 +1,6 @@
-[gd_scene load_steps=8 format=3]
+[gd_scene load_steps=9 format=3]
 
+[ext_resource type="PackedScene" path="res://ui/info_card.tscn" id="97_card"]
 [ext_resource type="Script" path="res://ui/battle_fx.gd" id="98_fx"]
 [ext_resource type="Script" path="res://ui/safe_margin.gd" id="99_safe"]
 [ext_resource type="Script" path="res://ui/battle_view.gd" id="1_view"]
@@ -56,7 +57,7 @@ layout_mode = 2
 size_flags_horizontal = 3
 theme_override_colors/font_color = Color(0.92549, 0.827451, 0.576471, 1)
 theme_override_font_sizes/font_size = 20
-text = "Runde 1"
+text = ""
 
 [node name="TickLabel" type="Label" parent="Margin/Layout/Header"]
 unique_name_in_owner = true
@@ -70,7 +71,7 @@ size_flags_vertical = 3
 
 [node name="EnemyCaption" type="Label" parent="Margin/Layout"]
 layout_mode = 2
-text = "Gegner"
+text = "BATTLE_ENEMY"
 label_settings = SubResource("caption")
 horizontal_alignment = 1
 
@@ -79,6 +80,7 @@ unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 4
 is_enemy = true
+inspectable = true
 floor_texture = ExtResource("3_floor_enemy")
 
 [node name="ResultLabel" type="Label" parent="Margin/Layout"]
@@ -95,11 +97,12 @@ vertical_alignment = 1
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 4
+inspectable = true
 floor_texture = ExtResource("4_floor_player")
 
 [node name="PlayerCaption" type="Label" parent="Margin/Layout"]
 layout_mode = 2
-text = "Dein Team"
+text = "BATTLE_TEAM"
 label_settings = SubResource("caption")
 horizontal_alignment = 1
 
@@ -129,7 +132,7 @@ size_flags_horizontal = 3
 focus_mode = 0
 theme_override_font_sizes/font_size = 18
 theme_type_variation = &"PrimaryButton"
-text = "Überspringen"
+text = "BATTLE_SKIP"
 
 [node name="ReplayButton" type="Button" parent="Margin/Layout/ButtonBar"]
 unique_name_in_owner = true
@@ -137,7 +140,7 @@ custom_minimum_size = Vector2(96, 56)
 layout_mode = 2
 focus_mode = 0
 theme_override_font_sizes/font_size = 18
-text = "Nochmal"
+text = "BATTLE_REPLAY"
 
 [node name="SpeedButton" type="Button" parent="Margin/Layout/ButtonBar"]
 unique_name_in_owner = true
@@ -157,3 +160,22 @@ grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
 script = ExtResource("98_fx")
+
+[node name="CardLayer" type="MarginContainer" parent="."]
+layout_mode = 1
+anchors_preset = 12
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = -80.0
+grow_horizontal = 2
+grow_vertical = 0
+mouse_filter = 2
+theme_override_constants/margin_left = 12
+theme_override_constants/margin_right = 12
+theme_override_constants/margin_bottom = 80
+
+[node name="InfoCard" parent="CardLayer" instance=ExtResource("97_card")]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 8

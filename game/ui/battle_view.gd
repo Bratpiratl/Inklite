@@ -30,6 +30,7 @@ const COLOR_ITEM := Color(0.85, 0.7, 1)
 @onready var _continue_button: Button = %ContinueButton
 @onready var _replay_button: Button = %ReplayButton
 @onready var _speed_button: Button = %SpeedButton
+@onready var _card: InfoCard = %InfoCard
 
 var _battle: Dictionary
 var _db: MonsterDb
@@ -48,6 +49,11 @@ func _ready() -> void:
 	_continue_button.pressed.connect(_on_continue)
 	_replay_button.pressed.connect(_start)
 	_speed_button.pressed.connect(_toggle_speed)
+	_enemy_board.unit_tapped.connect(_on_unit_tapped.bind(1))
+	_player_board.unit_tapped.connect(_on_unit_tapped.bind(0))
+	_card.action_pressed.connect(func() -> void:
+		Prefs.mark_tip_seen("battle")
+		_card.close())
 	_update_speed_button()
 	Audio.play_music("battle")
 	_start.call_deferred()
@@ -61,8 +67,12 @@ func _start() -> void:
 	_player_board.clear()
 	_result_label.text = ""
 	_outcome_label.text = ""
-	_title.text = "Runde %d" % _battle["round"]
+	_card.close()
+	_title.text = Loc.t("BATTLE_ROUND", {"n": _battle["round"]})
 	_outcome_label.text = _round_end_text()
+	if Prefs.tip_pending("battle"):
+		_card.show_text(Loc.t("TIP_TITLE"), Loc.t("TIP_BATTLE"), load("res://assets/logo.png"))
+		_card.set_action(Loc.t("BTN_OK"))
 	_play(_battle["events"], _generation)
 
 
@@ -79,7 +89,7 @@ func _play(events: Array, generation: int) -> void:
 
 func _set_playing(value: bool) -> void:
 	_playing = value
-	_continue_button.text = "Überspringen" if value else "Weiter"
+	_continue_button.text = Loc.t("BATTLE_SKIP" if value else "BTN_CONTINUE")
 	_replay_button.disabled = value
 
 
@@ -100,12 +110,12 @@ func _play_event(e: Dictionary) -> void:
 			for unit: Dictionary in e["units"]:
 				var def := _db.get_def(unit["id"])
 				var cell := _cell(unit["side"], unit["slot"])
-				cell.show_unit(def["sprite"], unit["hp"], unit["atk"], unit["level"], unit["side"] == 1)
+				cell.show_unit(unit["id"], def["sprite"], unit["hp"], unit["atk"], unit["level"], unit["side"] == 1)
 				if not _skipping:
 					cell.pop_in(index * POP_STAGGER / _speed(), POP_TIME / _speed())
 				index += 1
 		"tick":
-			_tick_label.text = "Zug %d" % e["t"]
+			_tick_label.text = Loc.t("BATTLE_TURN", {"n": e["t"]})
 		"attack":
 			Audio.play_hit()
 			var attacker := _cell(e["side"], e["slot"])
@@ -121,7 +131,7 @@ func _play_event(e: Dictionary) -> void:
 			cell.flash(FLASH_POISON, BattleTiming.T_EFFECT / _speed())
 			if not _skipping:
 				_fx.rise(cell, COLOR_POISON)
-				_fx.float_text(cell, "+%d Gift" % e["amount"], COLOR_POISON)
+				_fx.float_text(cell, Loc.t("FLOAT_POISON", {"n": e["amount"]}), COLOR_POISON)
 		"shield":
 			var cell := _cell(e["side"], e["slot"])
 			Audio.play("shield")
@@ -129,7 +139,7 @@ func _play_event(e: Dictionary) -> void:
 			cell.flash(FLASH_SHIELD, BattleTiming.T_EFFECT / _speed())
 			if not _skipping:
 				_fx.ring(cell, COLOR_BLOCK)
-				_fx.float_text(cell, "+%d Schild" % e["amount"], COLOR_BLOCK)
+				_fx.float_text(cell, Loc.t("FLOAT_SHIELD", {"n": e["amount"]}), COLOR_BLOCK)
 		"ability":
 			var source: String = e.get("source", "")
 			var anchor: Control = _cell(e["side"], e["slot"]) if e["slot"] >= 0 else _board(e["side"])
@@ -141,7 +151,7 @@ func _play_event(e: Dictionary) -> void:
 			elif not _skipping:
 				# Trainer oder Trinket: Name über dem auslösenden Monster oder mittig über dem Raster.
 				_fx.ring(anchor, COLOR_ITEM)
-				_fx.float_text(anchor, Session.item_def(source).get("name", source), COLOR_ITEM)
+				_fx.float_text(anchor, Loc.item(source), COLOR_ITEM)
 		"buff":
 			var cell := _cell(e["side"], e["slot"])
 			cell.set_atk(e["atk"])
@@ -149,7 +159,7 @@ func _play_event(e: Dictionary) -> void:
 			cell.flash(FLASH_ABILITY, BattleTiming.T_EFFECT / _speed())
 			if not _skipping:
 				_fx.rise(cell, COLOR_ABILITY, 10)
-				_fx.float_text(cell, "+%d %s" % [e["amount"], "Angriff" if e["stat"] == "atk" else "HP"], COLOR_ABILITY)
+				_fx.float_text(cell, Loc.t("FLOAT_ATK" if e["stat"] == "atk" else "FLOAT_HP", {"n": e["amount"]}), COLOR_ABILITY)
 		"death":
 			Audio.play("death")
 			var cell := _cell(e["side"], e["slot"])
@@ -188,23 +198,23 @@ func _show_result(winner: int) -> void:
 	var run := Session.run
 	match winner:
 		0:
-			_set_result("Sieg!", COLOR_POISON)
+			_set_result(Loc.t("BATTLE_WIN"), COLOR_POISON)
 			if not _skipping:
 				_fx.confetti()
 		1:
-			_set_result("Niederlage", COLOR_DAMAGE)
+			_set_result(Loc.t("BATTLE_LOSS"), COLOR_DAMAGE)
 		_:
-			_set_result("Unentschieden", COLOR_ABILITY)
+			_set_result(Loc.t("BATTLE_DRAW"), COLOR_ABILITY)
 	if run.is_over():
 		Audio.play("run_won" if run.is_victory() else "run_lost")
 	else:
 		Audio.play("win" if winner == 0 else "loss")
 	if run.is_victory():
-		_outcome_label.text = "Run gewonnen! %d Siege, %d Leben übrig." % [run.wins, run.lives]
+		_outcome_label.text = Loc.t("BATTLE_RUN_WON", {"wins": run.wins, "lives": run.lives})
 	elif run.is_over():
-		_outcome_label.text = "Keine Leben mehr. Run vorbei mit %d Siegen." % run.wins
+		_outcome_label.text = Loc.t("BATTLE_RUN_LOST", {"wins": run.wins})
 	else:
-		_outcome_label.text = "Siege %d/%d, Leben %d" % [run.wins, run.wins_to_victory(), run.lives]
+		_outcome_label.text = Loc.t("BATTLE_STATUS", {"wins": run.wins, "max": run.wins_to_victory(), "lives": run.lives})
 
 
 ## Ergebnis ploppt groß auf und setzt sich.
@@ -215,6 +225,22 @@ func _set_result(text: String, color: Color) -> void:
 	_result_label.scale = Vector2.ONE * RESULT_POP
 	_result_label.create_tween().tween_property(_result_label, "scale", Vector2.ONE, 0.35) \
 		.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+
+
+## Ein Tipp daneben schließt die Karte.
+func _gui_input(event: InputEvent) -> void:
+	if event is InputEventMouseButton and event.pressed and _card.visible:
+		_card.close()
+
+
+## Tippen auf ein Monster zeigt seine aktuellen Kampfwerte. Der Kampf läuft dabei weiter.
+func _on_unit_tapped(slot: int, side: int) -> void:
+	var cell := _cell(side, slot)
+	if not cell.has_unit():
+		return
+	_card.show_monster({"id": cell.unit_id, "level": cell.level}, _db,
+		{"atk": cell.atk, "hp": cell.hp, "shield": cell.shield, "poison": cell.poison})
+	_card.set_note(Loc.t("CARD_CURRENT"))
 
 
 func _cell(side: int, slot: int) -> UnitCell:
@@ -233,8 +259,8 @@ func _round_end_text() -> String:
 		if entry["slot"] >= 0:
 			for unit: Dictionary in _battle["events"][0]["units"]:
 				if unit["side"] == 0 and unit["slot"] == entry["slot"]:
-					monster_name = _db.get_def(unit["id"])["name"]
-		lines.append(AbilityText.round_end_line(entry, Session.item_def(entry["id"]).get("name", ""), monster_name))
+					monster_name = Loc.monster(unit["id"])
+		lines.append(AbilityText.round_end_line(entry, Loc.item(entry["id"]), monster_name))
 	return "\n".join(lines)
 
 

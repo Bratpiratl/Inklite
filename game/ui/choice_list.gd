@@ -21,6 +21,6 @@ func show_choices(ids: Array) -> void:
 		button.alignment = HORIZONTAL_ALIGNMENT_LEFT
 		button.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		button.add_theme_font_size_override("font_size", 16)
-		button.text = AbilityText.item_line(Session.item_def(id))
+		button.text = "%s\n%s" % [Loc.item(id), AbilityText.describe(Session.item_def(id).get("ability"), true)]
 		button.pressed.connect(chosen.emit.bind(id))
 		add_child(button)

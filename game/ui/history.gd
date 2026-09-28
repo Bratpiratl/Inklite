@@ -13,15 +13,15 @@ func _ready() -> void:
 	%BackButton.pressed.connect(func() -> void: Session.goto(Session.TITLE_SCENE))
 	var all := RunHistory.entries()
 	if all.is_empty():
-		%SummaryLabel.text = "Noch keine Runs beendet."
+		%SummaryLabel.text = Loc.t("HISTORY_EMPTY")
 	else:
 		var wins: Array = all.map(func(e: Dictionary) -> int: return int(e["wins"]))
 		var victories := all.filter(func(e: Dictionary) -> bool: return e["victory"]).size()
 		var total := 0
 		for w: int in wins:
 			total += w
-		%SummaryLabel.text = "%d Runs, %d gewonnen, beste %d Siege, Schnitt %.1f" % [
-			all.size(), victories, wins.max(), float(total) / all.size()]
+		%SummaryLabel.text = Loc.t("HISTORY_SUMMARY", {
+			"runs": all.size(), "won": victories, "best": wins.max(), "avg": "%.1f" % (float(total) / all.size())})
 	for entry: Dictionary in all:
 		_entries.add_child(_entry_panel(entry))
 	Audio.play_music("menu")
@@ -33,18 +33,17 @@ func _entry_panel(entry: Dictionary) -> Control:
 	panel.add_child(box)
 	var head := HBoxContainer.new()
 	box.add_child(head)
-	var trainer_def := Session.item_def(entry["trainer"])
-	if not trainer_def.is_empty():
+	if not Session.item_def(entry["trainer"]).is_empty():
 		head.add_child(_icon(Session.item_texture(entry["trainer"])))
 	var text := VBoxContainer.new()
 	text.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	head.add_child(text)
 	var title := Label.new()
-	title.text = ("Run gewonnen! %d Siege" if entry["victory"] else "%d Siege") % int(entry["wins"])
+	title.text = Loc.t("HISTORY_WON" if entry["victory"] else "HISTORY_WINS", {"wins": int(entry["wins"])})
 	title.add_theme_color_override("font_color", COLOR_WIN if entry["victory"] else COLOR_TEXT)
 	text.add_child(title)
 	var meta := Label.new()
-	meta.text = "%s, Runde %d, %s" % [_date(entry["date"]), int(entry["round"]), trainer_def.get("name", "")]
+	meta.text = Loc.t("HISTORY_META", {"date": _date(entry["date"]), "round": int(entry["round"]), "trainer": Loc.item(entry["trainer"])})
 	meta.add_theme_font_size_override("font_size", 12)
 	meta.add_theme_color_override("font_color", COLOR_MUTED)
 	meta.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART

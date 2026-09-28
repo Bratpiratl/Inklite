@@ -43,21 +43,31 @@ theme_override_constants/separation = 10
 layout_mode = 2
 theme_override_colors/font_color = Color(0.92549, 0.827451, 0.576471, 1)
 theme_override_font_sizes/font_size = 24
-text = "Einstellungen"
+text = "BTN_SETTINGS"
 horizontal_alignment = 1
 
-[node name="Sound" type="PanelContainer" parent="Margin/Layout"]
+[node name="Scroll" type="ScrollContainer" parent="Margin/Layout"]
+layout_mode = 2
+size_flags_vertical = 3
+horizontal_scroll_mode = 0
+
+[node name="Panels" type="VBoxContainer" parent="Margin/Layout/Scroll"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 10
+
+[node name="Sound" type="PanelContainer" parent="Margin/Layout/Scroll/Panels"]
 layout_mode = 2
 
-[node name="Box" type="VBoxContainer" parent="Margin/Layout/Sound"]
+[node name="Box" type="VBoxContainer" parent="Margin/Layout/Scroll/Panels/Sound"]
 layout_mode = 2
 theme_override_constants/separation = 4
 
-[node name="MusicLabel" type="Label" parent="Margin/Layout/Sound/Box"]
+[node name="MusicLabel" type="Label" parent="Margin/Layout/Scroll/Panels/Sound/Box"]
 layout_mode = 2
-text = "Musik"
+text = "SETTINGS_MUSIC"
 
-[node name="MusicSlider" type="HSlider" parent="Margin/Layout/Sound/Box"]
+[node name="MusicSlider" type="HSlider" parent="Margin/Layout/Scroll/Panels/Sound/Box"]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 48)
 layout_mode = 2
@@ -65,11 +75,11 @@ focus_mode = 0
 max_value = 1.0
 step = 0.05
 
-[node name="SfxLabel" type="Label" parent="Margin/Layout/Sound/Box"]
+[node name="SfxLabel" type="Label" parent="Margin/Layout/Scroll/Panels/Sound/Box"]
 layout_mode = 2
-text = "Effekte"
+text = "SETTINGS_SFX"
 
-[node name="SfxSlider" type="HSlider" parent="Margin/Layout/Sound/Box"]
+[node name="SfxSlider" type="HSlider" parent="Margin/Layout/Scroll/Panels/Sound/Box"]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 48)
 layout_mode = 2
@@ -77,22 +87,22 @@ focus_mode = 0
 max_value = 1.0
 step = 0.05
 
-[node name="Battle" type="PanelContainer" parent="Margin/Layout"]
+[node name="Battle" type="PanelContainer" parent="Margin/Layout/Scroll/Panels"]
 layout_mode = 2
 
-[node name="Box" type="VBoxContainer" parent="Margin/Layout/Battle"]
+[node name="Box" type="VBoxContainer" parent="Margin/Layout/Scroll/Panels/Battle"]
 layout_mode = 2
 theme_override_constants/separation = 4
 
-[node name="SpeedLabel" type="Label" parent="Margin/Layout/Battle/Box"]
+[node name="SpeedLabel" type="Label" parent="Margin/Layout/Scroll/Panels/Battle/Box"]
 layout_mode = 2
-text = "Kampftempo"
+text = "SETTINGS_SPEED"
 
-[node name="Speeds" type="HBoxContainer" parent="Margin/Layout/Battle/Box"]
+[node name="Speeds" type="HBoxContainer" parent="Margin/Layout/Scroll/Panels/Battle/Box"]
 layout_mode = 2
 theme_override_constants/separation = 8
 
-[node name="Speed1Button" type="Button" parent="Margin/Layout/Battle/Box/Speeds"]
+[node name="Speed1Button" type="Button" parent="Margin/Layout/Scroll/Panels/Battle/Box/Speeds"]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 48)
 layout_mode = 2
@@ -100,7 +110,7 @@ focus_mode = 0
 text = "1x"
 size_flags_horizontal = 3
 
-[node name="Speed2Button" type="Button" parent="Margin/Layout/Battle/Box/Speeds"]
+[node name="Speed2Button" type="Button" parent="Margin/Layout/Scroll/Panels/Battle/Box/Speeds"]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 48)
 layout_mode = 2
@@ -108,18 +118,62 @@ focus_mode = 0
 text = "2x"
 size_flags_horizontal = 3
 
-[node name="Debug" type="PanelContainer" parent="Margin/Layout"]
+[node name="Language" type="PanelContainer" parent="Margin/Layout/Scroll/Panels"]
 layout_mode = 2
 
-[node name="Box" type="VBoxContainer" parent="Margin/Layout/Debug"]
+[node name="Box" type="VBoxContainer" parent="Margin/Layout/Scroll/Panels/Language"]
 layout_mode = 2
 theme_override_constants/separation = 4
 
-[node name="DebugLabel" type="Label" parent="Margin/Layout/Debug/Box"]
+[node name="LanguageLabel" type="Label" parent="Margin/Layout/Scroll/Panels/Language/Box"]
 layout_mode = 2
-text = "Debug"
+text = "SETTINGS_LANGUAGE"
 
-[node name="DebugStatus" type="Label" parent="Margin/Layout/Debug/Box"]
+[node name="Languages" type="HBoxContainer" parent="Margin/Layout/Scroll/Panels/Language/Box"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="LangDeButton" type="Button" parent="Margin/Layout/Scroll/Panels/Language/Box/Languages"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 48)
+layout_mode = 2
+size_flags_horizontal = 3
+focus_mode = 0
+text = "LANG_DE"
+
+[node name="LangEnButton" type="Button" parent="Margin/Layout/Scroll/Panels/Language/Box/Languages"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 48)
+layout_mode = 2
+size_flags_horizontal = 3
+focus_mode = 0
+text = "LANG_EN"
+
+[node name="TipsButton" type="Button" parent="Margin/Layout/Scroll/Panels/Language/Box"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 48)
+layout_mode = 2
+focus_mode = 0
+text = "SETTINGS_TIPS_RESET"
+
+[node name="TipsStatus" type="Label" parent="Margin/Layout/Scroll/Panels/Language/Box"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 12
+autowrap_mode = 3
+
+[node name="Debug" type="PanelContainer" parent="Margin/Layout/Scroll/Panels"]
+layout_mode = 2
+
+[node name="Box" type="VBoxContainer" parent="Margin/Layout/Scroll/Panels/Debug"]
+layout_mode = 2
+theme_override_constants/separation = 4
+
+[node name="DebugLabel" type="Label" parent="Margin/Layout/Scroll/Panels/Debug/Box"]
+layout_mode = 2
+text = "DEBUG_TITLE"
+
+[node name="DebugStatus" type="Label" parent="Margin/Layout/Scroll/Panels/Debug/Box"]
 unique_name_in_owner = true
 layout_mode = 2
 theme_override_colors/font_color = Color(0.678431, 0.647059, 0.768627, 1)
@@ -127,29 +181,25 @@ theme_override_font_sizes/font_size = 12
 text = ""
 autowrap_mode = 3
 
-[node name="ExportButton" type="Button" parent="Margin/Layout/Debug/Box"]
+[node name="ExportButton" type="Button" parent="Margin/Layout/Scroll/Panels/Debug/Box"]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 48)
 layout_mode = 2
 focus_mode = 0
-text = "Telemetrie exportieren"
+text = "DEBUG_EXPORT"
 
-[node name="ClearButton" type="Button" parent="Margin/Layout/Debug/Box"]
+[node name="ClearButton" type="Button" parent="Margin/Layout/Scroll/Panels/Debug/Box"]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 48)
 layout_mode = 2
 focus_mode = 0
-text = "Telemetrie löschen"
-
-[node name="Spacer" type="Control" parent="Margin/Layout"]
-layout_mode = 2
-size_flags_vertical = 3
+text = "DEBUG_CLEAR"
 
 [node name="BackButton" type="Button" parent="Margin/Layout"]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(0, 56)
 layout_mode = 2
 focus_mode = 0
-text = "Zurück"
+text = "BTN_BACK"
 theme_type_variation = &"PrimaryButton"
 

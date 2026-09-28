@@ -1,84 +1,66 @@
 class_name AbilityText
 extends RefCounted
-## Übersetzt Fähigkeiten aus den Daten in kurze deutsche Sätze für die Anzeige.
+## Übersetzt Fähigkeiten aus den Daten in kurze Sätze für die Anzeige, in der eingestellten Sprache.
 ## Monster-Fähigkeiten beziehen sich auf das Monster selbst, Team-Fähigkeiten (Trainer, Trinkets)
 ## auf einen auslösenden Verbündeten ("when") und optional eingeschränkte Ziele ("only").
+## Mit rich = true sind Auslöser und Effekt für RichTextLabel eingefärbt.
 
-const TRIGGERS := {
-	"battle_start": "Kampfstart", "on_attack": "Beim Angriff",
-	"on_hurt": "Wenn getroffen", "on_death": "Beim Tod", "round_end": "Rundenende",
+const TEAM_TRIGGERS := ["on_attack", "on_hurt", "on_death"]
+const COLOR_TRIGGER := "#ffd461"
+const EFFECT_COLORS := {
+	"poison": "#8fff6b", "shield": "#80ccff", "damage": "#ff7676",
+	"buff_atk": "#ffd461", "buff_hp": "#ff9d9d", "gold": "#ffd461",
 }
-const TEAM_TRIGGERS := {
-	"on_attack": "Wenn ein %s angreift", "on_hurt": "Wenn ein %s getroffen wird", "on_death": "Wenn ein %s stirbt",
-}
-const EFFECTS := {
-	"poison": "%d Gift auf %s", "shield": "%d Schild für %s", "damage": "%d Schaden an %s",
-	"buff_atk": "+%d Angriff für %s", "buff_hp": "+%d HP für %s",
-}
-const TARGETS := {
-	"self": "sich", "target": "das Ziel", "attacker": "den Angreifer",
-	"allies_all": "alle Verbündeten", "allies_row": "die eigene Reihe", "allies_front": "die vordere Reihe",
-	"ally_random": "einen zufälligen Verbündeten",
-	"enemies_all": "alle Gegner", "enemies_front": "die vorderste Gegnerreihe",
-	"enemy_front": "den vordersten Gegner", "enemy_random": "einen zufälligen Gegner",
-}
-const ROWS := ["vorderen", "mittleren", "hinteren"]
 
 
-static func describe(ability: Variant, team: bool = false) -> String:
+static func describe(ability: Variant, team: bool = false, rich: bool = false) -> String:
 	if not (ability is Dictionary) or ability.is_empty():
-		return "Keine Fähigkeit."
+		return Loc.t("ABILITY_NONE")
 	var trigger: String = ability["trigger"]
-	var trigger_text: String = TRIGGERS.get(trigger, trigger)
+	var trigger_text := Loc.t("TRIGGER_" + trigger)
 	if team and TEAM_TRIGGERS.has(trigger):
-		trigger_text = TEAM_TRIGGERS[trigger] % _who(ability.get("when"))
+		trigger_text = Loc.t("TEAM_" + trigger, {"who": _who(ability.get("when"))})
+	var effect: String = ability["effect"]
 	var value := int(ability.get("value", 0))
-	var sentence: String
-	if ability["effect"] == "gold":
-		sentence = "+%d Gold in der nächsten Runde" % value
-	else:
-		var target: String = TARGETS.get(ability.get("target", ""), ability.get("target", ""))
-		if ability.get("only") is Dictionary:
-			target += " (nur %s)" % _only(ability["only"])
-		sentence = EFFECTS.get(ability["effect"], "%d %s") % [value, target]
-		if trigger == "round_end":
-			sentence = "dauerhaft " + sentence
-	return "%s: %s." % [trigger_text, sentence]
+	var target := Loc.t("TARGET_" + String(ability.get("target", "")))
+	if ability.get("only") is Dictionary:
+		target = Loc.t("ONLY", {"target": target, "what": _only(ability["only"])})
+	var sentence := Loc.t("EFFECT_" + effect, {"value": value, "target": target})
+	if trigger == "round_end" and effect != "gold":
+		sentence = Loc.t("PERMANENT", {"x": sentence})
+	if rich:
+		trigger_text = "[color=%s]%s[/color]" % [COLOR_TRIGGER, trigger_text]
+		sentence = "[color=%s]%s[/color]" % [EFFECT_COLORS.get(effect, "#ffffff"), sentence]
+	return Loc.t("ABILITY_SENTENCE", {"trigger": trigger_text, "effect": sentence})
 
 
-static func unit_line(db: MonsterDb, unit: Dictionary) -> String:
-	var def := db.get_def(unit["id"])
-	var stats := db.level_stats(unit["id"], unit["level"])
-	var atk := int(stats["atk"]) + int(unit.get("atk_bonus", 0))
-	var hp := int(stats["hp"]) + int(unit.get("hp_bonus", 0))
-	return "%s (%s, Stufe %d)\n%d Angriff, %d HP. %s" % [
-		def["name"], String(def["type"]).capitalize(), unit["level"], atk, hp, describe(stats.get("ability"))]
+## Schlüsselwörter einer Fähigkeit für die Erklärungen unter der Info-Karte (KW_<name>).
+static func keywords(ability: Variant) -> Array[String]:
+	var result: Array[String] = []
+	if ability is Dictionary and not ability.is_empty():
+		result.append(ability["trigger"])
+		result.append(ability["effect"])
+	return result
 
 
-static func item_line(def: Dictionary) -> String:
-	return "%s\n%s" % [def["name"], describe(def.get("ability"), true)]
-
-
-## Kurzform für aufsteigende Texte im Kampf, z. B. "+1 Angriff".
 static func round_end_line(entry: Dictionary, item_name: String, monster_name: String) -> String:
-	match entry["effect"]:
-		"gold":
-			return "%s: +%d Gold nächste Runde" % [item_name, entry["value"]]
-		"buff_atk":
-			return "%s: +%d Angriff für %s" % [item_name, entry["value"], monster_name]
-		_:
-			return "%s: +%d HP für %s" % [item_name, entry["value"], monster_name]
+	var key: String = {"gold": "ROUND_END_GOLD", "buff_atk": "ROUND_END_ATK"}.get(entry["effect"], "ROUND_END_HP")
+	return Loc.t(key, {"item": item_name, "n": entry["value"], "monster": monster_name})
 
 
 static func _who(filter: Variant) -> String:
 	if filter is Dictionary and filter.has("type"):
-		return "%s-Monster" % String(filter["type"]).capitalize()
+		return Loc.t("WHO_TYPE", {"type": Loc.type_name(filter["type"])})
 	if filter is Dictionary and filter.has("row"):
-		return "Monster in der %s Reihe" % ROWS[clampi(int(filter["row"]), 0, ROWS.size() - 1)]
-	return "Verbündeter"
+		return Loc.t("WHO_ROW", {"row": _row(filter["row"])})
+	return Loc.t("WHO_ANY")
 
 
 static func _only(filter: Dictionary) -> String:
 	if filter.has("type"):
-		return String(filter["type"]).capitalize()
-	return "%s Reihe" % ROWS[clampi(int(filter.get("row", 0)), 0, ROWS.size() - 1)]
+		return Loc.type_name(filter["type"])
+	return Loc.t("ONLY_ROW", {"row": _row(filter.get("row", 0))})
+
+
+static func _row(row: Variant) -> String:
+	return Loc.t("ROW_%d" % clampi(int(row), 0, 2))

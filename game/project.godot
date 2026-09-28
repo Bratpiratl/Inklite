@@ -38,6 +38,11 @@ theme/custom="res://ui/theme.tres"
 
 pointing/emulate_mouse_from_touch=true
 
+[internationalization]
+
+locale/translations=PackedStringArray("res://data/translations.de.translation", "res://data/translations.en.translation")
+locale/fallback="de"
+
 [rendering]
 
 renderer/rendering_method="gl_compatibility"

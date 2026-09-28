@@ -47,5 +47,5 @@ expand_mode = 1
 layout_mode = 2
 theme_override_colors/font_color = Color(0.92549, 0.827451, 0.576471, 1)
 theme_override_font_sizes/font_size = 32
-text = "Bitte dreh dein Gerät ins Hochformat."
+text = "ORIENTATION"
 horizontal_alignment = 1

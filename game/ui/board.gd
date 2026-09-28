@@ -10,6 +10,8 @@ const CELL_SCENE := preload("res://ui/unit_cell.tscn")
 
 @export var is_enemy := false
 @export var interactive := false
+## Nur antippen zum Ansehen, ohne Ziehen (Kampfansicht).
+@export var inspectable := false
 @export var floor_texture: Texture2D
 
 var _cells: Array[UnitCell] = []  # Index = Slot aus combat_sim
@@ -24,7 +26,8 @@ func _ready() -> void:
 		var slot := _slot_for_visual(visual)
 		cell.slot = slot
 		cell.set_floor(floor_texture)
-		cell.set_interactive(interactive)
+		cell.set_interactive(interactive or inspectable)
+		cell.draggable = interactive
 		cell.show_hp_bar = not interactive
 		cell.tapped.connect(unit_tapped.emit)
 		cell.dropped_on.connect(unit_moved.emit)
@@ -51,7 +54,7 @@ func show_board(board: Array, db: MonsterDb) -> void:
 		var stats := db.level_stats(unit["id"], unit["level"])
 		var hp := int(stats["hp"]) + int(unit.get("hp_bonus", 0))
 		var atk := int(stats["atk"]) + int(unit.get("atk_bonus", 0))
-		_cells[slot].show_unit(db.get_def(unit["id"])["sprite"], hp, atk, unit["level"], is_enemy)
+		_cells[slot].show_unit(unit["id"], db.get_def(unit["id"])["sprite"], hp, atk, unit["level"], is_enemy)
 
 
 @warning_ignore("integer_division")
