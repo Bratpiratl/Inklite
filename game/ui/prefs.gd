@@ -10,6 +10,7 @@ var music_volume := 0.6
 var sfx_volume := 0.8
 var speed_index := 0
 var language := ""
+var vibration := true
 var seen_tips: Array = []
 
 
@@ -20,6 +21,7 @@ func _ready() -> void:
 		sfx_volume = clampf(float(data.get("sfx_volume", sfx_volume)), 0.0, 1.0)
 		speed_index = int(data.get("speed_index", speed_index))
 		language = String(data.get("language", ""))
+		vibration = bool(data.get("vibration", true))
 		seen_tips = data.get("seen_tips", [])
 	if not Loc.LANGUAGES.has(language):
 		language = Loc.default_language()
@@ -32,7 +34,7 @@ func set_value(key: String, value: Variant) -> void:
 	if file != null:
 		file.store_string(JSON.stringify({
 			"music_volume": music_volume, "sfx_volume": sfx_volume, "speed_index": speed_index,
-			"language": language, "seen_tips": seen_tips,
+			"language": language, "seen_tips": seen_tips, "vibration": vibration,
 		}))
 		file.close()
 	if key == "language":

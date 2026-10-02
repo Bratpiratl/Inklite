@@ -5,6 +5,7 @@ extends PanelContainer
 ## oder ein Tipp daneben schließt, nichts verschwindet von allein.
 
 signal action_pressed
+signal secondary_pressed
 signal closed
 
 const SPRITE_ROOT := "res://assets/sprites/"
@@ -19,11 +20,13 @@ const COLOR_TERM := "#e0dbed"
 @onready var _glossary: RichTextLabel = %CardGlossary
 @onready var _note: Label = %CardNote
 @onready var _action: Button = %CardAction
+@onready var _secondary: Button = %CardSecondary
 
 
 func _ready() -> void:
 	%CardClose.pressed.connect(close)
 	_action.pressed.connect(action_pressed.emit)
+	_secondary.pressed.connect(secondary_pressed.emit)
 	hide()
 
 
@@ -73,6 +76,11 @@ func set_action(text: String, enabled: bool = true) -> void:
 	_action.visible = true
 
 
+func set_secondary(text: String) -> void:
+	_secondary.text = text
+	_secondary.visible = true
+
+
 func set_note(text: String) -> void:
 	_note.text = text
 	_note.visible = text != ""
@@ -110,5 +118,6 @@ func _set_glossary(terms: Array[String]) -> void:
 ## Neue Inhalte starten ohne Aktion und Hinweis, der Aufrufer setzt sie danach.
 func _finish() -> void:
 	_action.visible = false
+	_secondary.visible = false
 	_note.visible = false
 	show()

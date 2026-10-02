@@ -47,7 +47,6 @@ CARD_SELL,Verkaufen (+{gold}),Sell (+{gold})
 CARD_COPIES,Du hast {n} davon auf Stufe 1. Bei 3 verschmelzen sie zu Stufe 2.,You have {n} of these at level 1. At 3 they merge into level 2.
 CARD_TRAINER,"Trainer, wirkt den ganzen Run","Trainer, active all run"
 CARD_TRINKET,"Trinket, wirkt den ganzen Run","Trinket, active all run"
-CARD_CURRENT,Aktueller Stand im Kampf,Current state in battle
 CARD_STATUS,"Schild {shield}, Gift {poison}","Shield {shield}, poison {poison}"
 TRINKET_TITLE,Wähle ein Trinket,Choose a trinket
 TRINKET_HINT,Belohnung für deine Siege. Trinkets wirken den ganzen Run.,A reward for your wins. Trinkets last the whole run.
@@ -95,7 +94,7 @@ HISTORY_WON,Run gewonnen! {wins} Siege,Run won! {wins} wins
 HISTORY_WINS,{wins} Siege,{wins} wins
 HISTORY_META,"{date}, Runde {round}, {trainer}","{date}, round {round}, {trainer}"
 TIP_TITLE,Tipp,Tip
-TIP_SHOP,"Tippe ein Angebot oder Monster an, um es anzusehen, und kaufe oder verkaufe über den Knopf unten. Ziehe Monster auf dem Raster, um sie umzustellen: Die vordere Reihe wird zuerst getroffen.","Tap an offer or monster to inspect it, then buy or sell with the button at the bottom. Drag monsters on the grid to rearrange them: the front row gets hit first."
+TIP_SHOP,"Tippe ein Angebot oder Monster an, um es anzusehen, und kaufe, friere ein oder verkaufe über die Knöpfe unten. Du kannst Angebote auch direkt auf ein Feld ziehen. Die vordere Reihe wird zuerst getroffen.","Tap an offer or monster to inspect it, then buy, freeze or sell with the buttons at the bottom. You can also drag offers straight onto a square. The front row gets hit first."
 TIP_FULL,"Dein Raster ist voll. Verkaufe schwache Monster (antippen oder nach unten ziehen), um stärkere zu kaufen. Drei gleiche verschmelzen auch bei vollem Raster.",Your grid is full. Sell weak monsters (tap them or drag them down) to buy stronger ones. Three of a kind still merge on a full grid.
 TIP_TRINKET,"Trainer und Trinkets stehen oben in der Leiste. Tippe ein Symbol an, um nachzulesen, was es tut.",Your trainer and trinkets sit in the bar at the top. Tap an icon to read what it does.
 TIP_BATTLE,"Der Kampf läuft von allein. Tippe ein Monster an, um seine aktuellen Werte zu sehen.",The battle plays itself. Tap a monster to see its current stats.
@@ -186,3 +185,14 @@ TRINKET_thorn_hammer,Dornenhammer,Thorn Hammer
 TRINKET_throwing_axe,Wurfaxt,Throwing Axe
 TRINKET_soul_draught,Seelentrank,Soul Draught
 TRINKET_gold_chest,Goldtruhe,Gold Chest
+MERGE_PROGRESS,{n}/{max},{n}/{max}
+CARD_FREEZE,Einfrieren,Freeze
+CARD_UNFREEZE,Auftauen,Unfreeze
+CARD_FROZEN_NOTE,Eingefroren: bleibt beim Neu würfeln und in der nächsten Runde.,Frozen: stays when you reroll and into the next round.
+BATTLE_MVP,"Bester Kämpfer: {name}, {n} Schaden","Top fighter: {name}, {n} damage"
+CARD_DEALT,Schaden verursacht: {n},Damage dealt: {n}
+SETTINGS_VIBRATION,Vibration,Vibration
+SETTINGS_ON,An,On
+SETTINGS_OFF,Aus,Off
+HELP_SHOP_T,Shop-Kniffe,Shop tricks
+HELP_SHOP,"Ziehe ein Angebot direkt auf ein freies Feld, um es dort aufzustellen, oder auf ein gleiches Monster, um es dort zu verschmelzen. Einfrieren hält ein Angebot fest, auch beim Neu würfeln und in der nächsten Runde. Die Zahl 2/3 auf einem Angebot zeigt, wie viele davon du schon hast.","Drag an offer straight onto an empty square to place it there, or onto an identical monster to merge it there. Freezing keeps an offer, even when you reroll and into the next round. The 2/3 on an offer shows how many of it you already have."

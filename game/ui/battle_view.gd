@@ -2,7 +2,7 @@ extends Control
 ## Spielt die Ereignisliste des letzten Kampfes (Session.last_battle) ab. Rechnet selbst nichts aus:
 ## Werte kommen ausschließlich aus den Ereignissen. Eigenes Team ist Seite 0 (unten), Gegner Seite 1.
 
-const SPEEDS: Array[float] = [1.0, 2.0]
+const SPEEDS: Array[float] = [1.0, 2.0, 3.0]
 const SKIP_SPEED := 1000.0
 
 const POP_STAGGER := 0.04
@@ -38,6 +38,8 @@ var _generation := 0  # Jeder Neustart erhöht das, laufende Wiedergaben brechen
 var _playing := false
 var _skipping := false
 var _hit_from := Vector2.ZERO  # woher der letzte Treffer kam, für Rückstoß und Funkenrichtung
+var _source := Vector2i(-1, -1)  # (Seite, Slot) des letzten Angreifers oder der letzten Fähigkeit
+var _dealt: Dictionary = {}  # Vector2i(Seite, Slot) -> verursachter Schaden in diesem Kampf
 
 
 func _ready() -> void:
@@ -68,6 +70,8 @@ func _start() -> void:
 	_result_label.text = ""
 	_outcome_label.text = ""
 	_card.close()
+	_dealt = {}
+	_source = Vector2i(-1, -1)
 	_title.text = Loc.t("BATTLE_ROUND", {"n": _battle["round"]})
 	_outcome_label.text = _round_end_text()
 	if Prefs.tip_pending("battle"):
@@ -120,6 +124,7 @@ func _play_event(e: Dictionary) -> void:
 			Audio.play_hit()
 			var attacker := _cell(e["side"], e["slot"])
 			var target := _cell(e["to_side"], e["to_slot"])
+			_source = Vector2i(e["side"], e["slot"])
 			_hit_from = attacker.center()
 			attacker.lunge(target.center(), BattleTiming.T_ATTACK / _speed())
 		"damage":
@@ -144,6 +149,7 @@ func _play_event(e: Dictionary) -> void:
 			var source: String = e.get("source", "")
 			var anchor: Control = _cell(e["side"], e["slot"]) if e["slot"] >= 0 else _board(e["side"])
 			_hit_from = anchor.global_position + anchor.size / 2.0
+			_source = Vector2i(e["side"], e["slot"])
 			if source == "":
 				_cell(e["side"], e["slot"]).flash(FLASH_ABILITY, BattleTiming.T_EFFECT / _speed())
 				if not _skipping:
@@ -173,6 +179,10 @@ func _play_event(e: Dictionary) -> void:
 
 func _on_damage(e: Dictionary) -> void:
 	var cell := _cell(e["side"], e["slot"])
+	# Schaden zählt für den letzten Angreifer bzw. die letzte Fähigkeit. Gift lässt sich keinem
+	# einzelnen Monster zuordnen und zählt nicht mit.
+	if e["kind"] != Effects.KIND_POISON and _source.y >= 0 and _source.x != e["side"]:
+		_dealt[_source] = int(_dealt.get(_source, 0)) + int(e["amount"]) + int(e["blocked"])
 	cell.set_stats(e["hp"], e["shield"], e["poison"])
 	var kind: String = e["kind"]
 	var is_poison := kind == Effects.KIND_POISON
@@ -199,6 +209,7 @@ func _show_result(winner: int) -> void:
 	match winner:
 		0:
 			_set_result(Loc.t("BATTLE_WIN"), COLOR_POISON)
+			Haptics.pulse(Haptics.WIN)
 			if not _skipping:
 				_fx.confetti()
 		1:
@@ -215,6 +226,21 @@ func _show_result(winner: int) -> void:
 		_outcome_label.text = Loc.t("BATTLE_RUN_LOST", {"wins": run.wins})
 	else:
 		_outcome_label.text = Loc.t("BATTLE_STATUS", {"wins": run.wins, "max": run.wins_to_victory(), "lives": run.lives})
+	var mvp := _mvp()
+	if mvp != "":
+		_outcome_label.text += "\n" + mvp
+
+
+## Bester Kämpfer des eigenen Teams nach verursachtem Schaden.
+func _mvp() -> String:
+	var best := Vector2i(-1, -1)
+	for key: Vector2i in _dealt:
+		if key.x == 0 and (best.y < 0 or _dealt[key] > _dealt[best]):
+			best = key
+	if best.y < 0:
+		return ""
+	var cell := _cell(0, best.y)
+	return Loc.t("BATTLE_MVP", {"name": Loc.monster(cell.unit_id), "n": _dealt[best]})
 
 
 ## Ergebnis ploppt groß auf und setzt sich.
@@ -240,7 +266,7 @@ func _on_unit_tapped(slot: int, side: int) -> void:
 		return
 	_card.show_monster({"id": cell.unit_id, "level": cell.level}, _db,
 		{"atk": cell.atk, "hp": cell.hp, "shield": cell.shield, "poison": cell.poison})
-	_card.set_note(Loc.t("CARD_CURRENT"))
+	_card.set_note(Loc.t("CARD_DEALT", {"n": int(_dealt.get(Vector2i(side, slot), 0))}))
 
 
 func _cell(side: int, slot: int) -> UnitCell:

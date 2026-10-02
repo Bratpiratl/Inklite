@@ -1,7 +1,7 @@
 extends Control
 ## Anleitung: Regeln in kurzen Abschnitten plus alle Schlüsselwörter. Die Zahlen kommen aus balance.json.
 
-const SECTIONS := ["GOAL", "ROUND", "GRID", "MERGE", "ITEMS", "TIPS"]
+const SECTIONS := ["GOAL", "ROUND", "GRID", "MERGE", "SHOP", "ITEMS", "TIPS"]
 const KEYWORDS := ["front", "level", "battle_start", "on_attack", "on_hurt", "on_death", "round_end",
 	"poison", "shield", "damage", "buff_atk", "buff_hp", "gold"]
 const COLOR_HEADING := Color(0.92549, 0.827451, 0.576471)

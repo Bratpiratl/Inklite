@@ -5,6 +5,7 @@ extends GridContainer
 
 signal unit_tapped(slot: int)
 signal unit_moved(from_slot: int, to_slot: int)
+signal offer_dropped(offer_index: int, slot: int)
 
 const CELL_SCENE := preload("res://ui/unit_cell.tscn")
 
@@ -31,12 +32,24 @@ func _ready() -> void:
 		cell.show_hp_bar = not interactive
 		cell.tapped.connect(unit_tapped.emit)
 		cell.dropped_on.connect(unit_moved.emit)
+		cell.offer_dropped.connect(offer_dropped.emit)
 		_cells[slot] = cell
 	clear()
 
 
 func cell(slot: int) -> UnitCell:
 	return _cells[slot]
+
+
+func set_offer_check(check: Callable) -> void:
+	for c in _cells:
+		c.offer_check = check
+
+
+## Hebt die Felder hervor, für die filter(slot) true liefert. Leerer Callable: nichts.
+func highlight(filter: Callable) -> void:
+	for slot in CombatSim.SLOTS:
+		_cells[slot].set_highlight(filter.is_valid() and filter.call(slot))
 
 
 func clear() -> void:
@@ -55,6 +68,30 @@ func show_board(board: Array, db: MonsterDb) -> void:
 		var hp := int(stats["hp"]) + int(unit.get("hp_bonus", 0))
 		var atk := int(stats["atk"]) + int(unit.get("atk_bonus", 0))
 		_cells[slot].show_unit(unit["id"], db.get_def(unit["id"])["sprite"], hp, atk, unit["level"], is_enemy)
+
+
+## Abwürfe in die Fugen zwischen den Feldern gehen an das nächste Feld. Ohne das bricht Godot den Zug
+## ab, sobald der Finger zwischen zwei Feldern losgelassen wird.
+func _can_drop_data(at_position: Vector2, data: Variant) -> bool:
+	var target := _cell_at(at_position)
+	return target != null and target._can_drop_data(at_position - target.position, data)
+
+
+func _drop_data(at_position: Vector2, data: Variant) -> void:
+	var target := _cell_at(at_position)
+	if target != null:
+		target._drop_data(at_position - target.position, data)
+
+
+func _cell_at(at_position: Vector2) -> UnitCell:
+	var best: UnitCell = null
+	var best_distance := INF
+	for c in _cells:
+		var distance := (c.position + c.size / 2.0).distance_squared_to(at_position)
+		if distance < best_distance:
+			best_distance = distance
+			best = c
+	return best
 
 
 @warning_ignore("integer_division")

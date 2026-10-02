@@ -5,8 +5,10 @@ extends Control
 
 signal tapped(slot: int)
 signal dropped_on(from_slot: int, to_slot: int)
+signal offer_dropped(offer_index: int, slot: int)
 
 const DRAG_KIND := "board_unit"
+const HIGHLIGHT := Color(1.45, 1.3, 0.75)
 const SPRITE_ROOT := "res://assets/sprites/"
 const LUNGE_DISTANCE := 16.0
 const KNOCK_DISTANCE := 5.0
@@ -45,7 +47,11 @@ var show_hp_bar := false
 
 var _interactive := false
 var _has_unit := false
+## Prüft, ob ein gezogenes Shop-Angebot (Index) hier gekauft werden darf. Setzt der Shop.
+var offer_check: Callable
+
 var _tweens: Array[Tween] = []
+var _highlight_tween: Tween
 
 
 func set_floor(texture: Texture2D) -> void:
@@ -197,11 +203,34 @@ func _get_drag_data(_at_position: Vector2) -> Variant:
 
 
 func _can_drop_data(_at_position: Vector2, data: Variant) -> bool:
-	return _interactive and draggable and data is Dictionary and data.get("kind", "") == DRAG_KIND
+	if not (_interactive and draggable and data is Dictionary):
+		return false
+	var kind: String = data.get("kind", "")
+	if kind == DRAG_KIND:
+		return true
+	if kind == ShopCard.DRAG_KIND:
+		return offer_check.is_valid() and offer_check.call(int(data["index"]), slot)
+	return false
 
 
 func _drop_data(_at_position: Vector2, data: Variant) -> void:
-	dropped_on.emit(int(data["slot"]), slot)
+	if data.get("kind", "") == ShopCard.DRAG_KIND:
+		offer_dropped.emit(int(data["index"]), slot)
+	else:
+		dropped_on.emit(int(data["slot"]), slot)
+
+
+## Boden pulsiert golden: mögliches Ziel oder passender Verschmelz-Partner.
+func set_highlight(value: bool) -> void:
+	if _highlight_tween != null:
+		_highlight_tween.kill()
+		_highlight_tween = null
+	var base := Color.WHITE if _has_unit else EMPTY_FLOOR
+	_floor.modulate = base
+	if value:
+		_highlight_tween = create_tween().set_loops()
+		_highlight_tween.tween_property(_floor, "modulate", HIGHLIGHT, 0.35)
+		_highlight_tween.tween_property(_floor, "modulate", base, 0.35)
 
 
 func _notification(what: int) -> void:

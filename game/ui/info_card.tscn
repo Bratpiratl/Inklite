@@ -34,7 +34,7 @@ layout_mode = 2
 theme_override_colors/font_color = Color(0.92549, 0.827451, 0.576471, 1)
 theme_override_colors/font_outline_color = Color(0.164706, 0.113725, 0.0705882, 1)
 theme_override_constants/outline_size = 4
-text = "Titel"
+text = ""
 autowrap_mode = 3
 
 [node name="CardSub" type="Label" parent="Box/Header/Titles"]
@@ -44,7 +44,7 @@ theme_override_colors/font_color = Color(0.94, 0.9, 0.82, 1)
 theme_override_colors/font_outline_color = Color(0.164706, 0.113725, 0.0705882, 1)
 theme_override_constants/outline_size = 4
 theme_override_font_sizes/font_size = 12
-text = "Unterzeile"
+text = ""
 autowrap_mode = 3
 
 [node name="CardClose" type="Button" parent="Box/Header"]
@@ -79,19 +79,28 @@ bbcode_enabled = true
 fit_content = true
 scroll_active = false
 
-[node name="Footer" type="HBoxContainer" parent="Box"]
-layout_mode = 2
-theme_override_constants/separation = 8
-
-[node name="CardNote" type="Label" parent="Box/Footer"]
+[node name="CardNote" type="Label" parent="Box"]
 unique_name_in_owner = true
 layout_mode = 2
-size_flags_horizontal = 3
 theme_override_colors/font_color = Color(0.94, 0.9, 0.82, 1)
 theme_override_colors/font_outline_color = Color(0.164706, 0.113725, 0.0705882, 1)
 theme_override_constants/outline_size = 4
 theme_override_font_sizes/font_size = 12
 autowrap_mode = 3
+
+[node name="Footer" type="HBoxContainer" parent="Box"]
+layout_mode = 2
+theme_override_constants/separation = 8
+alignment = 2
+
+[node name="CardSecondary" type="Button" parent="Box/Footer"]
+unique_name_in_owner = true
+visible = false
+custom_minimum_size = Vector2(0, 48)
+layout_mode = 2
+size_flags_horizontal = 8
+focus_mode = 0
+text = ""
 
 [node name="CardAction" type="Button" parent="Box/Footer"]
 unique_name_in_owner = true
@@ -100,4 +109,4 @@ layout_mode = 2
 size_flags_horizontal = 8
 focus_mode = 0
 theme_type_variation = &"PrimaryButton"
-text = "Aktion"
+text = ""

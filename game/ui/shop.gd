@@ -1,6 +1,7 @@
 extends Control
 ## Shop-Phase. Tippen auf ein Angebot zeigt die Info-Karte (Bottom Sheet über dem Shop-Bereich)
-## mit Kaufen. Tippen auf ein eigenes Monster zeigt die Karte mit Verkaufen. Ziehen stellt um oder verkauft
+## mit Kaufen und Einfrieren. Ein Angebot auf ein Feld ziehen kauft es dorthin, auf ein gleiches
+## Monster gezogen verschmilzt es dort. Tippen auf ein eigenes Monster zeigt die Karte mit Verkaufen. Ziehen stellt um oder verkauft
 ## über die Verkaufsfläche. Leiste oben, Trainer und Trinkets erklären sich per Tipp.
 ## Regeln stecken in RunState, hier wird nur angezeigt und weitergereicht.
 
@@ -8,6 +9,7 @@ const CARD_SCENE := preload("res://ui/shop_card.tscn")
 const FLASH_MERGE := Color(2.0, 1.8, 0.7)
 const FLASH_TIME := 0.5
 const ITEM_SIZE := 48
+
 
 enum CardMode { NONE, BUY, SELL, TIP }
 
@@ -30,6 +32,7 @@ var _mode := CardMode.NONE
 var _selected_offer := -1
 var _selected_slot := -1
 var _tip := ""
+var _merge_needed := 0  # für "2/3" auf Shop-Karten, aus balance.json
 
 
 func _ready() -> void:
@@ -37,6 +40,7 @@ func _ready() -> void:
 	if _run == null:
 		Session.goto(Session.TITLE_SCENE)
 		return
+	_merge_needed = int(Session.balance["run"]["merge_count"])
 	_board.unit_tapped.connect(_on_unit_tapped)
 	_board.unit_moved.connect(_on_unit_moved)
 	_sell_zone.dropped.connect(_on_sell_dropped)
@@ -45,6 +49,9 @@ func _ready() -> void:
 	_trinket_choices.chosen.connect(_on_trinket_chosen)
 	_hud.info_requested.connect(_on_hud_info)
 	_card.action_pressed.connect(_on_card_action)
+	_card.secondary_pressed.connect(_on_card_secondary)
+	_board.offer_dropped.connect(_buy)
+	_board.set_offer_check(func(index: int, slot: int) -> bool: return _run.can_buy_at(index, slot))
 	_card.closed.connect(_on_card_closed)
 	%MenuButton.pressed.connect(func() -> void: Session.goto(Session.TITLE_SCENE))
 	%HelpButton.pressed.connect(func() -> void: Session.open_help(Session.SHOP_SCENE))
@@ -64,6 +71,7 @@ func _refresh() -> void:
 	while _cards.get_child_count() < _run.offers.size():
 		var card: ShopCard = CARD_SCENE.instantiate()
 		var index := _cards.get_child_count()
+		card.index = index
 		card.pressed.connect(func() -> void: _on_offer_tapped(index))
 		card.add_to_group("silent_button")
 		_cards.add_child(card)
@@ -79,10 +87,24 @@ func _refresh() -> void:
 			card.show_offer(Session.db.get_def(id), Session.db.level_stats(id, 1))
 			# Angebote bleiben antippbar, auch wenn das Gold fehlt: die Karte erklärt, warum.
 			card.disabled = false
+			card.set_frozen(_run.is_frozen(i))
+			card.set_merge_progress(_copies_on_board(id), _merge_needed)
 		card.set_selected(_mode == CardMode.BUY and i == _selected_offer)
 	_reroll.text = Loc.t("SHOP_REROLL", {"cost": _run.reroll_cost()})
 	_reroll.disabled = _run.gold < _run.reroll_cost()
 	_fight.disabled = _run.unit_count() == 0 or not _run.can_fight()
+	_update_highlight()
+
+
+## Ausgewähltes Angebot: gleiche Monster auf dem Raster leuchten als Verschmelz-Partner.
+func _update_highlight() -> void:
+	if _mode != CardMode.BUY or _selected_offer < 0 or _run.offers[_selected_offer] == "":
+		_board.highlight(Callable())
+		return
+	var id: String = _run.offers[_selected_offer]
+	_board.highlight(func(slot: int) -> bool:
+		var unit: Variant = _run.board[slot]
+		return unit != null and unit["id"] == id and unit["level"] == 1)
 
 
 ## Trainer und Trinkets als antippbare Symbole oben.
@@ -113,6 +135,7 @@ func _on_offer_tapped(index: int) -> void:
 	_selected_offer = index
 	_card.show_monster({"id": id, "level": 1}, Session.db)
 	_card.set_action(Loc.t("CARD_BUY", {"cost": _run.price(index)}), _run.can_buy(index))
+	_card.set_secondary(Loc.t("CARD_UNFREEZE" if _run.is_frozen(index) else "CARD_FREEZE"))
 	if _run.gold < _run.price(index):
 		_card.set_note(Loc.t("CARD_NO_GOLD"))
 	elif not _run.can_buy(index):
@@ -163,6 +186,15 @@ func _on_card_action() -> void:
 			_card.close()
 
 
+func _on_card_secondary() -> void:
+	if _mode == CardMode.BUY and _run.toggle_freeze(_selected_offer):
+		Audio.play("click")
+		Session.save()
+		_card.set_secondary(Loc.t("CARD_UNFREEZE" if _run.is_frozen(_selected_offer) else "CARD_FREEZE"))
+		_card.set_note(Loc.t("CARD_FROZEN_NOTE") if _run.is_frozen(_selected_offer) else "")
+		_refresh()
+
+
 func _on_card_closed() -> void:
 	_mode = CardMode.NONE
 	_selected_offer = -1
@@ -201,24 +233,27 @@ func _copies_on_board(id: String) -> int:
 
 # --- Aktionen ---
 
-func _buy(index: int) -> void:
-	var result := _run.buy(index)
+func _buy(index: int, target_slot: int = -1) -> void:
+	var result := _run.buy(index, target_slot)
 	if not result["ok"]:
 		Audio.play("error")
 		return
 	Audio.play("merge" if not result["merges"].is_empty() else "buy")
+	Haptics.pulse(Haptics.MERGE if not result["merges"].is_empty() else Haptics.TAP)
 	Session.save()
-	var unit: Dictionary = _run.board[result["slot"]]
 	_mode = CardMode.NONE
 	_selected_offer = -1
-	_card.show_monster(unit, Session.db)
-	if not result["merges"].is_empty():
+	# Nach einem Kauf bleibt der Shop sichtbar, damit man weiterkaufen kann. Nur ein Verschmelzen
+	# bekommt die Karte, das ist die Nachricht, die man sehen will.
+	if result["merges"].is_empty():
+		_card.close()
+	else:
+		_card.show_monster(_run.board[result["slot"]], Session.db)
 		_card.set_note(Loc.t("SHOP_MERGED", {"level": result["merges"][-1]["level"]}))
 		for merge: Dictionary in result["merges"]:
 			_board.cell(merge["slot"]).flash(FLASH_MERGE, FLASH_TIME)
 	_refresh()
-	if _run.unit_count() == CombatSim.SLOTS and Prefs.tip_pending("full"):
-		_card.close()
+	_show_pending_tip()
 
 
 func _sell(slot: int) -> void:
@@ -277,7 +312,12 @@ func _notification(what: int) -> void:
 		return
 	if what == NOTIFICATION_DRAG_BEGIN:
 		var data: Variant = get_viewport().gui_get_drag_data()
-		if data is Dictionary and data.get("kind", "") == UnitCell.DRAG_KIND:
+		if data is Dictionary and data.get("kind", "") == ShopCard.DRAG_KIND:
+			# Gültige Ziele leuchten: freie Felder und gleiche Monster zum Verschmelzen.
+			_card.close()
+			var index := int(data["index"])
+			_board.highlight(func(slot: int) -> bool: return _run.can_buy_at(index, slot))
+		elif data is Dictionary and data.get("kind", "") == UnitCell.DRAG_KIND:
 			_card.close()
 			_sell_label.text = Loc.t("SHOP_SELL_DROP", {"gold": _run.sell_value(int(data["slot"]))})
 			_sell_zone.visible = true
@@ -285,3 +325,4 @@ func _notification(what: int) -> void:
 	elif what == NOTIFICATION_DRAG_END:
 		_sell_zone.visible = false
 		_shop_area.modulate.a = 1.0
+		_update_highlight()
