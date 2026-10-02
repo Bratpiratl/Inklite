@@ -235,3 +235,74 @@ func test_ghosts_are_matched_by_wins() -> void:
 	var fresh := _run(ghosts, {"ghost_match_pool": 1})
 	assert_str(fresh.fight()["ghost_id"]).is_equal("w0")
 
+
+
+func test_buy_onto_empty_target_slot() -> void:
+	var run := _run()
+	_set_offers(run, ["cheap"])
+	run.frozen = [false]
+	var result := run.buy(0, 7)
+	assert_int(result["slot"]).is_equal(7)
+	assert_str(run.board[7]["id"]).is_equal("cheap")
+	assert_that(run.board[0]).is_null()
+
+
+func test_buy_onto_same_monster_merges_there() -> void:
+	var run := _run()
+	run.board[0] = {"id": "trio", "level": 1}
+	run.board[5] = {"id": "trio", "level": 1}
+	_set_offers(run, ["trio"])
+	run.frozen = [false]
+	var result := run.buy(0, 5)
+	assert_int(result["slot"]).is_equal(5)
+	assert_dict(run.board[5]).is_equal({"id": "trio", "level": 2})
+	assert_int(run.unit_count()).is_equal(1)
+
+
+func test_buy_onto_other_monster_is_refused() -> void:
+	var run := _run()
+	run.board[2] = {"id": "wall", "level": 1}
+	_set_offers(run, ["cheap"])
+	run.frozen = [false]
+	assert_bool(run.can_buy_at(0, 2)).is_false()
+	assert_bool(run.buy(0, 2)["ok"]).is_false()
+	assert_int(run.gold).is_equal(10)
+
+
+func test_buy_onto_same_monster_on_full_board_merges_there() -> void:
+	var run := _run()
+	for slot in CombatSim.SLOTS:
+		run.board[slot] = {"id": "wall", "level": 1}
+	run.board[1] = {"id": "trio", "level": 1}
+	run.board[8] = {"id": "trio", "level": 1}
+	_set_offers(run, ["trio"])
+	run.frozen = [false]
+	var result := run.buy(0, 8)
+	assert_int(result["slot"]).is_equal(8)
+	assert_dict(run.board[8]).is_equal({"id": "trio", "level": 2})
+	assert_that(run.board[1]).is_null()
+
+
+func test_frozen_offer_survives_reroll_and_next_round() -> void:
+	var run := _run([{"id": "g", "round": 1, "team": []}], {"start_lives": 9, "wins_to_victory": 9})
+	var kept: String = run.offers[1]
+	assert_bool(run.toggle_freeze(1)).is_true()
+	run.reroll()
+	assert_str(run.offers[1]).is_equal(kept)
+	assert_bool(run.is_frozen(1)).is_true()
+	run.board[0] = {"id": "cheap", "level": 1}
+	run.fight()
+	assert_str(run.offers[1]).is_equal(kept)
+	assert_bool(run.toggle_freeze(1)).is_true()
+	assert_bool(run.is_frozen(1)).is_false()
+
+
+func test_buying_frozen_offer_clears_freeze_and_save_keeps_it() -> void:
+	var run := _run()
+	run.toggle_freeze(0)
+	run.toggle_freeze(2)
+	run.buy(0)
+	assert_bool(run.is_frozen(0)).is_false()
+	assert_bool(run.toggle_freeze(0)).is_false()
+	var copy := RunState.from_dict(JSON.parse_string(JSON.stringify(run.to_dict())), _db(), _balance(), [])
+	assert_array(copy.frozen).is_equal([false, false, true])

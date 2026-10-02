@@ -121,3 +121,16 @@ func test_save_and_load_keeps_items() -> void:
 	assert_dict(copy.to_dict()).is_equal(GameData.normalize_ints(JSON.parse_string(JSON.stringify(run.to_dict()))))
 	assert_str(copy.trainer).is_equal("smith")
 	assert_int(copy.team_abilities().size()).is_equal(2)
+
+
+func test_bonuses_add_up_when_merging_on_full_board() -> void:
+	var run := _run("")
+	for slot in CombatSim.SLOTS:
+		run.board[slot] = {"id": "cheap", "level": 1}
+	run.board[3] = {"id": "trio", "level": 1, "atk_bonus": 2}
+	run.board[6] = {"id": "trio", "level": 1, "hp_bonus": 3}
+	run.offers = ["trio"]
+	run.frozen = [false]
+	run.buy(0)
+	assert_dict(run.board[3]).is_equal({"id": "trio", "level": 2, "atk_bonus": 2, "hp_bonus": 3})
+	assert_that(run.board[6]).is_null()

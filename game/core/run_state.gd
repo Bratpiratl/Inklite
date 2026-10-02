@@ -24,6 +24,7 @@ var draws := 0
 var rolls := 0  # Würfe in dieser Runde, 0 = Gratiswurf zu Rundenbeginn
 var board: Array = []
 var offers: Array = []  # Monster-IDs, "" für gekaufte Plätze
+var frozen: Array = []  # je Angebot: true = eingefroren, bleibt beim Würfeln und in der nächsten Runde
 var trainer := ""
 var trinkets: Array[String] = []
 var pending_trinkets: Array[String] = []  # Auswahl nach jedem zweiten Sieg, muss vor dem Kampf gewählt werden
@@ -131,11 +132,37 @@ func choose_trinket(id: String) -> bool:
 
 
 func can_buy(offer_index: int) -> bool:
+	return can_buy_at(offer_index, -1)
+
+
+## target_slot -1: erstes freies Feld. Sonst ein freies Feld oder ein gleiches Monster auf Stufe 1,
+## mit dem das gekaufte verschmelzen soll.
+func can_buy_at(offer_index: int, target_slot: int) -> bool:
 	if offer_index < 0 or offer_index >= offers.size() or offers[offer_index] == "":
 		return false
 	if gold < price(offer_index):
 		return false
-	return _free_slot() >= 0 or _slots_of(offers[offer_index], 1).size() >= _merge_count() - 1
+	var id: String = offers[offer_index]
+	var room := _free_slot() >= 0 or _slots_of(id, 1).size() >= _merge_count() - 1
+	if target_slot < 0:
+		return room
+	if target_slot >= CombatSim.SLOTS:
+		return false
+	var occupant: Variant = board[target_slot]
+	if occupant == null:
+		return true
+	return occupant["id"] == id and occupant["level"] == 1 and room
+
+
+func is_frozen(offer_index: int) -> bool:
+	return offer_index >= 0 and offer_index < frozen.size() and frozen[offer_index]
+
+
+func toggle_freeze(offer_index: int) -> bool:
+	if offer_index < 0 or offer_index >= offers.size() or offers[offer_index] == "":
+		return false
+	frozen[offer_index] = not is_frozen(offer_index)
+	return true
 
 
 ## Team im Format von CombatSim.
@@ -152,26 +179,34 @@ func team() -> Array:
 # --- Aktionen im Shop ---
 
 ## Kauft ein Angebot. Ergebnis: {"ok", "slot", "merges": [{"id", "level", "slot"}]}.
-func buy(offer_index: int) -> Dictionary:
-	if not can_buy(offer_index):
+## target_slot -1: erstes freies Feld (vorne zuerst). Sonst landet das Monster auf diesem Feld, oder,
+## wenn dort ein gleiches steht, verschmilzt es dort, sobald genug Kopien beisammen sind.
+func buy(offer_index: int, target_slot: int = -1) -> Dictionary:
+	if not can_buy_at(offer_index, target_slot):
 		return {"ok": false}
 	var id: String = offers[offer_index]
 	_roll_bought.append(id)
 	gold -= price(offer_index)
 	offers[offer_index] = ""
+	frozen[offer_index] = false
 	var slot := _free_slot()
+	if target_slot >= 0 and board[target_slot] == null:
+		slot = target_slot
 	var merges: Array = []
 	if slot >= 0:
 		board[slot] = {"id": id, "level": 1}
 	else:
 		# Raster voll: der Neue verschmilzt direkt mit den vorhandenen Kopien.
 		var copies := _slots_of(id, 1)
-		for i in range(1, _merge_count() - 1):
-			board[copies[i]] = null
-		slot = copies[0]
-		board[slot] = _merged(id, 2, copies.slice(0, _merge_count() - 1))
+		var keep: int = target_slot if copies.has(target_slot) else copies[0]
+		copies.erase(keep)
+		var used: Array = [keep] + copies.slice(0, _merge_count() - 2)
+		board[keep] = _merged(id, 2, used)
+		for other: int in used.slice(1):
+			board[other] = null
+		slot = keep
 		merges.append({"id": id, "level": 2, "slot": slot})
-	merges.append_array(_merge_all())
+	merges.append_array(_merge_all(target_slot))
 	for merge: Dictionary in merges:
 		if merge["id"] == id:
 			slot = merge["slot"]
@@ -267,7 +302,7 @@ func to_dict() -> Dictionary:
 	return {
 		"seed": seed_value, "round": round_number, "gold": gold, "lives": lives,
 		"wins": wins, "losses": losses, "draws": draws, "rolls": rolls,
-		"board": board.duplicate(true), "offers": offers.duplicate(),
+		"board": board.duplicate(true), "offers": offers.duplicate(), "frozen": frozen.duplicate(),
 		"trainer": trainer, "trinkets": trinkets.duplicate(),
 		"pending_trinkets": pending_trinkets.duplicate(), "bonus_gold": bonus_gold,
 	}
@@ -295,6 +330,9 @@ static func from_dict(data: Dictionary, db: MonsterDb, balance: Dictionary, ghos
 	run.offers = []
 	for id: String in data["offers"]:
 		run.offers.append(id if id == "" or db.has(id) else "")
+	var saved_frozen: Array = data.get("frozen", [])
+	for i in run.offers.size():
+		run.frozen.append(i < saved_frozen.size() and bool(saved_frozen[i]) and run.offers[i] != "")
 	run.trainer = data.get("trainer", "")
 	run.bonus_gold = int(data.get("bonus_gold", 0))
 	for id: String in data.get("trinkets", []):
@@ -318,9 +356,16 @@ func _roll_offers() -> void:
 	_log_roll()
 	var rng := GameRng.new(_mix(SALT_SHOP, rolls))
 	rolls += 1
+	var old_offers := offers
+	var old_frozen := frozen
 	offers = []
-	for id in Shop.roll(_db, _rules, round_number, rng):
-		offers.append(id)
+	frozen = []
+	# Gewürfelt wird immer der volle Shop, damit der Zufall gleich bleibt; eingefrorene Plätze behalten ihr Angebot.
+	var rolled := Shop.roll(_db, _rules, round_number, rng)
+	for i in rolled.size():
+		var keep: bool = i < old_offers.size() and i < old_frozen.size() and old_frozen[i] and old_offers[i] != ""
+		offers.append(old_offers[i] if keep else rolled[i])
+		frozen.append(keep)
 	_roll_offered = offers.duplicate()
 
 
@@ -363,8 +408,8 @@ func _pick_ghost() -> Dictionary:
 
 
 ## Verschmilzt so lange, bis nirgends mehr genug gleiche Monster gleicher Stufe stehen.
-## Das Ergebnis landet auf dem vordersten der beteiligten Felder.
-func _merge_all() -> Array:
+## Das Ergebnis landet auf preferred_slot, wenn das beteiligt ist, sonst auf dem vordersten Feld.
+func _merge_all(preferred_slot: int = -1) -> Array:
 	var merges: Array = []
 	var changed := true
 	while changed:
@@ -376,11 +421,14 @@ func _merge_all() -> Array:
 			var copies := _slots_of(unit["id"], unit["level"])
 			if copies.size() < _merge_count():
 				continue
-			var target: int = copies[0]
+			var used: Array = copies.slice(0, _merge_count())
+			if copies.has(preferred_slot) and not used.has(preferred_slot):
+				used[used.size() - 1] = preferred_slot
+			var target: int = preferred_slot if used.has(preferred_slot) else used[0]
 			var new_level: int = unit["level"] + 1
-			var merged := _merged(unit["id"], new_level, copies.slice(0, _merge_count()))
-			for i in range(1, _merge_count()):
-				board[copies[i]] = null
+			var merged := _merged(unit["id"], new_level, used)
+			for other: int in used:
+				board[other] = null
 			board[target] = merged
 			merges.append({"id": unit["id"], "level": new_level, "slot": target})
 			changed = true
