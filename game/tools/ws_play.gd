@@ -70,12 +70,16 @@ const TARGET_TEXT := {
 	"trigger_unit": "Auslöser", "target": "Ziel", "attacker": "Angreifer", "killer": "Mörder", "enemy_random": "zufälliger Gegner",
 	"enemies_all": "alle Gegner", "enemy_highest_hp": "stärkster Gegner", "all_others": "alle anderen",
 }
+const DIFFICULTY_HINTS := {"leicht": "Schwache Gegner, zum Reinkommen.", "mittel": "Gegner aus der Mitte des Feldes.",
+	"schwer": "Nur starke Gegner, richtig hart."}
 const PASSIVE_TEXT := {"deathrattle_twice": "Todesröcheln doppelt", "battlecry_twice": "Kampfschreie doppelt",
 	"end_of_turn_twice": "Rundenende doppelt"}
 
 var rs: WsRuleset
 var run: WsRun
 var mode := "bg"
+## Gewählte Schwierigkeit (id aus run.difficulties im Regelsatz), bleibt für den nächsten Run stehen.
+var difficulty := "mittel"
 
 var _sprites := {}
 var _textures := {}
@@ -407,20 +411,64 @@ func _show_start() -> void:
 	box.add_child(_title_label("INKLITE WORKSHOP"))
 	var meta: Dictionary = rs.section("meta")
 	var info := _panel("Regelsatz", &"HeaderBlue")
-	var text := "%s (Version %s)\n%d Einheiten, %d Geisterteams als Gegner.\n\nKaufen: Angebot antippen oder auf einen Platz ziehen. Umstellen: Einheit auf einen anderen Platz ziehen, auch zwischen Team und Bank. Verkaufen: antippen oder auf die rote Fläche ziehen." % [
+	var text := "%s (Version %s): %d Einheiten, %d Geisterteams.\nAntippen zeigt Infos, Ziehen kauft und stellt um." % [
 		meta.get("name", ""), meta.get("version", "?"), rs.units.size(), rs.ghosts.size()]
 	if rs.ghosts.is_empty():
-		text += "\n\nNoch keine Geisterteams: Im Editor erst eine Simulation laufen lassen, sonst kämpfst du gegen leere Teams."
-	info.add_child(_label(text, 12, &"PanelLabel"))
+		text += "\nNoch keine Geisterteams: Im Editor erst eine Simulation laufen lassen."
+	info.add_child(_label(text, 11, &"PanelLabel"))
 	box.add_child(info.get_parent())
+	var levels: Array = rs.section("run").get("difficulties", [])
+	if levels.is_empty():
+		difficulty = ""
+	else:
+		if not levels.any(func(d: Dictionary) -> bool: return d["id"] == difficulty):
+			difficulty = levels[mini(1, levels.size() - 1)]["id"]
+		var choice := _panel("Schwierigkeit", &"HeaderYellow")
+		var row := _hbox(6)
+		choice.add_child(row)
+		var hint := _label("", 11, &"PanelLabel")
+		hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		var group := ButtonGroup.new()
+		var buttons: Array[Button] = []
+		for level: Dictionary in levels:
+			var button := _button(str(level.get("name", level["id"])), &"", Callable(), 48, 15)
+			button.toggle_mode = true
+			button.button_group = group
+			button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+			button.button_pressed = level["id"] == difficulty
+			buttons.append(button)
+			row.add_child(button)
+			button.pressed.connect(func() -> void:
+				difficulty = level["id"]
+				Audio.play("click")
+				_mark_difficulty(buttons, levels, hint))
+		choice.add_child(hint)
+		_mark_difficulty(buttons, levels, hint)
+		box.add_child(choice.get_parent())
 	box.add_child(_button("Neuer Run, BG-Kampf", &"PrimaryButton", _new_run.bind("bg"), 56, 20))
 	box.add_child(_button("Neuer Run, Raster-Kampf", &"", _new_run.bind("grid"), 52, 16))
 	box.add_child(_button("Zurück zum Spiel", &"", func() -> void: Session.goto(Session.TITLE_SCENE), 48, 14))
 
 
+## Gewählte Stufe rot hervorheben, darunter ein kurzer Satz dazu.
+func _mark_difficulty(buttons: Array[Button], levels: Array, hint: Label) -> void:
+	for i in buttons.size():
+		var selected: bool = levels[i]["id"] == difficulty
+		buttons[i].theme_type_variation = &"PrimaryButton" if selected else &""
+		if selected:
+			hint.text = DIFFICULTY_HINTS.get(difficulty, "Gegnerstärke %d bis %d." % [int(levels[i].get("min", 0)), int(levels[i].get("max", 100))])
+
+
+func _difficulty_name(id: String) -> String:
+	for level: Dictionary in rs.section("run").get("difficulties", []):
+		if level["id"] == id:
+			return str(level.get("name", id))
+	return id
+
+
 func _new_run(combat_mode: String) -> void:
 	mode = combat_mode
-	run = WsRun.create(rs, int(Time.get_unix_time_from_system()) % 2147483647, combat_mode)
+	run = WsRun.create(rs, int(Time.get_unix_time_from_system()) % 2147483647, combat_mode, difficulty)
 	run.trace = true
 	Audio.play("click")
 	_show_shop()
@@ -438,6 +486,8 @@ func _show_end() -> void:
 	summary.add_child(_label("%s\n%d Siege, %d Niederlagen, %d Unentschieden in %d Tagen." % [
 		"Zehn Siege, der Run ist gewonnen." if run.is_victory() else "Keine Leben mehr.",
 		run.wins, run.losses, run.draws, run.day - 1], 13, &"PanelLabel"))
+	if run.difficulty != "":
+		summary.add_child(_label("Schwierigkeit: " + _difficulty_name(run.difficulty), 12, &"PanelLabel"))
 	var team := _hbox(4)
 	team.alignment = BoxContainer.ALIGNMENT_CENTER
 	for unit: Dictionary in run.team_units():
@@ -856,7 +906,11 @@ func _show_battle(battle: Dictionary) -> void:
 	title.add_theme_color_override("font_color", Color(0.92549, 0.827451, 0.576471))
 	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	header.add_child(title)
-	var ghost := _label("Gegner: %s" % battle.get("ghost_id", "?"), 11)
+	var strength := int(battle.get("ghost_strength", -1))
+	var ghost_text := "Gegnerstärke %d" % strength if strength >= 0 else "Gegner: %s" % battle.get("ghost_id", "?")
+	if str(battle.get("difficulty", "")) != "":
+		ghost_text += " (%s)" % _difficulty_name(battle["difficulty"])
+	var ghost := _label(ghost_text, 11)
 	ghost.add_theme_color_override("font_color", Color(0.678431, 0.647059, 0.768627))
 	ghost.autowrap_mode = TextServer.AUTOWRAP_OFF
 	ghost.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
