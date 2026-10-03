@@ -19,6 +19,10 @@ var origin_slot := -1
 ## Feld im Raster-Modus.
 var cell := -1
 var killer: WsUnit = null
+## Einheit aus dem Team, der diese Einheit zugerechnet wird (sie selbst, oder wer sie beschworen hat).
+var root_uid := 0
+## Kampfstatistik, siehe WsCombat.STAT_KEYS.
+var stats: Dictionary = {}
 var avenge_progress: Dictionary = {}  # Index der Fähigkeit -> gezählte Tode
 
 

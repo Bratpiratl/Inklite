@@ -217,7 +217,7 @@ function drawUnitTable() {
   const val = ({ u, m }) => (key in m && !(key in u) ? m[key] : u[key]);
   rows.sort((a, b) => { const x = val(a), y = val(b); return (x === y ? 0 : x === undefined || x === null ? 1 : y === undefined || y === null ? -1 : x > y ? 1 : -1) * S.sort.dir; });
   const cols = [["id", "Id"], ["name", "Name"], ["rarity", "Sel."], ["cost", "Preis", "num"], ["colors", "Farben"], ["atk", "A/L", "num"], ["keywords", "Schlüsselw."], ["eff", "Effekt"],
-    ["winrate", "Winrate", "num"], ["vs_rarity", "± Sel.", "num"], ["pick_rate", "Pick %", "num"], ["battles", "Kämpfe", "num"], ["bg", "BG-Vorlage", "hide-mobile"]];
+    ["winrate", "Winrate", "num"], ["vs_rarity", "± Sel.", "num"], ["avg_damage", "Ø Schaden", "num"], ["carry_rate", "Carry %", "num"], ["pick_rate", "Pick %", "num"], ["battles", "Kämpfe", "num"], ["bg", "BG-Vorlage", "hide-mobile"]];
   const t = $("#unit-table");
   t.innerHTML = `<thead><tr>${cols.map(([k, l, c]) => `<th data-k="${k}" class="${c || ""}">${l}${S.sort.key === k ? (S.sort.dir > 0 ? " ▲" : " ▼") : ""}</th>`).join("")}</tr></thead><tbody>${rows.map(({ u, m }) => `
     <tr class="clickable ${m.flag ? "flag-" + m.flag : ""} ${u.disabled ? "disabled" : ""}" data-id="${esc(u.id)}">
@@ -225,7 +225,7 @@ function drawUnitTable() {
       <td>${esc(rarityName(u.rarity))}</td><td class="num">${u.cost}</td><td>${(u.colors || []).map(dot).join("")}</td>
       <td class="num">${u.atk}/${u.hp}</td><td>${(u.keywords || []).map((k) => `<span class="chip">${esc(kwName(k))}</span>`).join("")}</td>
       <td class="eff">${esc(unitSummary(u))}</td>
-      <td class="num">${m.winrate ?? ""}</td><td class="num">${m.vs_rarity == null ? "" : (m.vs_rarity > 0 ? "+" : "") + m.vs_rarity}</td><td class="num">${m.pick_rate ?? ""}</td><td class="num">${m.battles ?? ""}</td>
+      <td class="num">${m.winrate ?? ""}</td><td class="num">${m.vs_rarity == null ? "" : (m.vs_rarity > 0 ? "+" : "") + m.vs_rarity}</td><td class="num">${m.avg_damage ?? ""}</td><td class="num">${m.carry_rate ?? ""}</td><td class="num">${m.pick_rate ?? ""}</td><td class="num">${m.battles ?? ""}</td>
       <td class="hide-mobile muted">${esc(u.ref?.bg_name || "")}</td></tr>`).join("")}</tbody>`;
   t.querySelectorAll("th").forEach((th) => th.addEventListener("click", () => {
     const k = th.dataset.k === "atk" ? "atk" : th.dataset.k;
@@ -253,7 +253,7 @@ function openUnit(id, isToken) {
       <button class="close" id="u-close">Schließen</button>
       <h2>${esc(u.id)} · ${esc(u.name)}</h2>
       <div class="muted">${isToken ? "Spielstein" : esc(rarityName(u.rarity)) + " · " + u.cost + " Gold"}</div>
-      ${m ? `<div class="card" style="margin-top:8px"><span class="stat">Winrate <b>${m.winrate ?? "–"}</b></span><span class="stat">± Seltenheit ${m.vs_rarity ?? "–"}</span><span class="stat">früh ${m["winrate_früh"] ?? "–"}</span><span class="stat">mitte ${m.winrate_mitte ?? "–"}</span><span class="stat">spät ${m["winrate_spät"] ?? "–"}</span><br><span class="stat">Pick ${m.pick_rate ?? "–"} %</span><span class="stat">in ${m.presence ?? "–"} % der Kämpfe</span><span class="stat">Stufe 3: ${m.level3_share ?? "–"} %</span><span class="stat">Ø Stärke der Geister mit ihr: ${m.ghost_strength ?? "–"}</span></div>` : ""}
+      ${m ? `<div class="card" style="margin-top:8px"><span class="stat">Winrate <b>${m.winrate ?? "–"}</b></span><span class="stat">± Seltenheit ${m.vs_rarity ?? "–"}</span><span class="stat">früh ${m["winrate_früh"] ?? "–"}</span><span class="stat">mitte ${m.winrate_mitte ?? "–"}</span><span class="stat">spät ${m["winrate_spät"] ?? "–"}</span><br><span class="stat">Pick ${m.pick_rate ?? "–"} %</span><span class="stat">in ${m.presence ?? "–"} % der Kämpfe</span><span class="stat">Stufe 3: ${m.level3_share ?? "–"} %</span><span class="stat">Ø Stärke der Geister mit ihr: ${m.ghost_strength ?? "–"}</span><br><span class="stat">Ø Schaden ${m.avg_damage ?? "–"}</span><span class="stat">Schadensanteil ${m.damage_share ?? "–"} %</span><span class="stat">Ø Kills ${m.avg_kills ?? "–"}</span><span class="stat">Carry ${m.carry_rate ?? "–"} %</span></div>` : ""}
       <div class="row">
         <label class="field"><span>Name</span><input data-f="name" value="${esc(u.name)}"></label>
         ${isToken ? "" : `<label class="field"><span>Seltenheit</span><select data-f="rarity">${(RULES().rarities || []).map((r, i) => `<option value="${i}" ${i === u.rarity ? "selected" : ""}>${esc(r)}</option>`).join("")}</select></label>
@@ -662,6 +662,7 @@ function renderHelp() {
       <li><b>Winrate</b>: Siegquote der Kämpfe, in denen die Einheit im Team stand, bereinigt um den Tagesschnitt. 50 = durchschnittlich.</li>
       <li><b>± Sel.</b>: Abstand zum Schnitt der eigenen Seltenheit. Höhere Seltenheiten dürfen stärker sein, sie kosten mehr. Rot/blau ab 8 Punkten Abstand und 80 Kämpfen.</li>
       <li><b>früh/mitte/spät</b>: Tage 1 bis 3, 4 bis 7, ab 8.</li>
+      <li><b>Ø Schaden, Schadensanteil, Carry %</b>: aus der Kampfstatistik. Carry = in gewonnenen Kämpfen der meiste Schaden im Team. Beschworene Spielsteine zählen für ihre Beschwörerin. Achtung: Unterstützer (Buffs, Schilde, Spott) machen wenig Schaden und sind trotzdem wichtig, darum immer zusammen mit der Winrate lesen.</li>
       <li><b>Pick %</b>: wie oft Bots sie kaufen, wenn sie angeboten wird. Bots kaufen nach Preis, Verschmelzen und Farbe, nicht nach Effekt.</li>
       <li><b>BG-Abgleich</b> (im Bericht): Rangkorrelation unserer Winrate mit dem echten BG-Durchschnittsplatz der Vorlage.</li>
     </ul></div>

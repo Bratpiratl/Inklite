@@ -95,6 +95,19 @@ def analyze(df: pd.DataFrame, units: dict, ruleset_dir=None) -> dict:
             rows.append((uid, b.day, b.adj, level, b.bot))
     presence = pd.DataFrame(rows, columns=["id", "day", "adj", "level", "bot"])
 
+    # Schaden je Einheit aus unit_stats (Beschwörungen sind der Beschwörerin zugerechnet).
+    # carry: In gewonnenen Kämpfen die Einheit mit dem meisten Schaden im Team.
+    dmg_rows = []
+    if "unit_stats" in battles:
+        for b in battles.itertuples():
+            stats = b.unit_stats if isinstance(b.unit_stats, list) else []
+            total = sum(s[1] for s in stats)
+            top = max((s[1] for s in stats), default=0)
+            for tag, dmg, kills, taken in stats:
+                dmg_rows.append((tag.split(":")[0], dmg, kills, taken, dmg / total if total else 0.0,
+                                 b.score == 1.0 and dmg == top and top > 0, b.score == 1.0))
+    dmg = pd.DataFrame(dmg_rows, columns=["id", "damage", "kills", "taken", "share", "carry", "won"])
+
     offered = shops.explode("offered").groupby("offered").size()
     bought = shops.explode("bought").dropna(subset=["bought"]).groupby("bought").size()
     n_battles = len(battles)
@@ -118,6 +131,12 @@ def analyze(df: pd.DataFrame, units: dict, ruleset_dir=None) -> dict:
             q = p[(p["day"] >= lo) & (p["day"] <= hi)]
             row["winrate_" + name] = round(50.0 + 100.0 * q["adj"].mean(), 1) if len(q) >= 20 else None
         row["ghost_strength"] = ghost_strength.get(uid)
+        dq = dmg[dmg["id"] == uid] if len(dmg) else dmg
+        row["avg_damage"] = round(float(dq["damage"].mean()), 1) if len(dq) else None
+        row["avg_kills"] = round(float(dq["kills"].mean()), 2) if len(dq) else None
+        row["damage_share"] = round(100.0 * float(dq["share"].mean()), 1) if len(dq) else None
+        won = dq[dq["won"]] if len(dq) else dq
+        row["carry_rate"] = round(100.0 * float(won["carry"].mean()), 1) if len(won) >= 20 else None
         ref = d.get("ref", {})
         row["bg_name"] = ref.get("bg_name", "")
         stat = bg.get(ref.get("bg_id", ""))
@@ -238,11 +257,14 @@ def report(summary: dict, source: str, ruleset_name: str, combat: str) -> str:
     parts.append(chart(fig))
 
     parts.append("<h2>Einheiten nach bereinigter Winrate</h2>")
+    parts.append("<p>„Schaden %“ = Anteil am Schaden des eigenen Teams, „Carry %“ = in gewonnenen Kämpfen "
+                 "der höchste Schaden im Team. Beschworene Spielsteine zählen für ihre Beschwörerin.</p>")
     parts.append(f"<p>„± Sel.“ = Abstand zum Schnitt der eigenen Seltenheit. Rot = mehr als {RARITY_GAP:.0f} Punkte darüber, "
                  f"blau = mehr als {RARITY_GAP:.0f} darunter, jeweils ab {MIN_SAMPLES} Kämpfen.</p>")
     parts.append(table(units, [("id", "Id"), ("name", "Name"), ("rarity", "Sel."), ("cost", "Preis"), ("colors", "Farben"),
                                ("winrate", "Winrate"), ("vs_rarity", "± Sel."), ("winrate_früh", "früh"), ("winrate_mitte", "mitte"), ("winrate_spät", "spät"),
                                ("battles", "Kämpfe"), ("pick_rate", "Pick %"), ("level3_share", "Stufe 3 %"),
+                               ("avg_damage", "Ø Schaden"), ("damage_share", "Schaden %"), ("carry_rate", "Carry %"),
                                ("ghost_strength", "Ø Teamstärke"), ("bg_name", "BG-Vorlage"), ("bg_avg_placement", "BG-Platz")]))
 
     fig, ax = plt.subplots(figsize=(7, 4))

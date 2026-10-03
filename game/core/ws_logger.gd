@@ -32,6 +32,9 @@ func battle(run: WsRun, b: Dictionary) -> void:
 		"day": b["day"], "ev": "battle", "seed": b["seed"], "team": b["team"].map(unit_tag),
 		"enemy": b["ghost_id"], "enemy_strength": b.get("ghost_strength", -1), "result": b["result"], "attacks": b["attacks"], "ticks": b["ticks"],
 		"survivors": b["survivors"], "winner": b["winner"], "wins": run.wins, "lives": run.lives, "gold_left": run.gold,
+		# Je eigene Einheit (Beschwörungen eingerechnet): Schaden, Kills, erlittener Schaden.
+		"unit_stats": b.get("team_stats", []).map(func(t: Dictionary) -> Array:
+			return ["%s:%d" % [t["id"], t["level"]], t["damage"], t["kills"], t["taken"]]),
 	})
 
 

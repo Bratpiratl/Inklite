@@ -14,11 +14,16 @@ extends RefCounted
 ##
 ## Team-Format: Array von {"id", "level", "slot", optional "atk_bonus", "hp_bonus", "keywords"}.
 ## Ergebnis: {"winner": 0 | 1 | DRAW, "attacks", "ticks", "survivors": [a, b], "events",
-##            "permanent": [seite] -> {slot: {"atk", "hp", "keywords"}}} für dauerhafte Kampf-Boni.
+##            "permanent": [seite] -> {slot: {"atk", "hp", "keywords"}}} für dauerhafte Kampf-Boni,
+##            "stats": [seite] -> Liste je Einheit mit STAT_KEYS, siehe _collect_stats().
+## Schaden zählt effektiv (höchstens die verbliebenen HP des Ziels), Schaden an Verbündeten getrennt als
+## "friendly_damage". Von Gottesschild geschluckte Treffer zählen als "shields_popped" beim Angreifer.
 
 const DRAW := -1
 const MAX_DEPTH := 40
 const RANDOM_TARGETS := ["ally_random", "ally_random_other", "enemy_random"]
+const STAT_KEYS: Array[String] = ["damage", "damage_attack", "damage_ability", "friendly_damage", "taken", "kills",
+	"shields_popped", "abilities", "buff_atk", "buff_hp", "summons"]
 
 var rs: WsRuleset
 var mode: String
@@ -32,6 +37,7 @@ var _next: Array = [0, 0]
 var _events: Array = []
 var _permanent: Array = [{}, {}]
 var _uid := 0
+var _all_units: Array = []
 var _attacks := 0
 var _ticks := 0
 var _depth := 0
@@ -54,6 +60,7 @@ func simulate(team_a: Array, team_b: Array, seed_value: int) -> Dictionary:
 	_events = []
 	_permanent = [{}, {}]
 	_uid = 0
+	_all_units = []
 	_attacks = 0
 	_ticks = 0
 	_depth = 0
@@ -85,7 +92,7 @@ func simulate(team_a: Array, team_b: Array, seed_value: int) -> Dictionary:
 	_emit({"ev": "end", "winner": winner})
 	return {
 		"winner": winner, "attacks": _attacks, "ticks": _ticks, "events": _events, "permanent": _permanent,
-		"survivors": [_living(0).size(), _living(1).size()],
+		"survivors": [_living(0).size(), _living(1).size()], "stats": _collect_stats(),
 	}
 
 
@@ -240,16 +247,26 @@ func _damage(source: WsUnit, target: WsUnit, amount: int, is_attack: bool) -> in
 		return 0
 	if target.has_kw("divine_shield"):
 		target.keywords.erase("divine_shield")
+		if source != null and source.side != target.side:
+			_count(source, "shields_popped", 1)
 		_emit({"ev": "shield_lost", "uid": target.uid})
 		_fire_trigger(target, "on_shield_lost", {})
 		for ally: WsUnit in _living(target.side):
 			_fire_listener(ally, "on_ally_shield_lost", target, {"trigger_unit": target})
 		return 0
+	var hp_before := target.hp
 	target.hp -= amount
 	_emit({"ev": "damage", "uid": target.uid, "amount": amount, "hp": target.hp})
 	if is_attack and source != null and source.has_kw("venomous") and target.hp > 0:
 		target.hp = 0
 		source.keywords.erase("venomous")
+	var effective := hp_before - maxi(target.hp, 0)
+	if source != null and source.side == target.side:
+		_count(source, "friendly_damage", effective)
+	else:
+		_count(source, "damage", effective)
+		_count(source, "damage_attack" if is_attack else "damage_ability", effective)
+	_count(target, "taken", effective)
 	if target.hp <= 0:
 		if target.killer == null:
 			target.killer = source
@@ -276,6 +293,8 @@ func _handle_death(unit: WsUnit) -> void:
 	unit.alive = false
 	var pos := _remove(unit)
 	_emit({"ev": "death", "uid": unit.uid, "side": unit.side})
+	if unit.killer != null and unit.killer.side != unit.side:
+		_count(unit.killer, "kills", 1)
 	var ctx := {"pos": pos, "killer": unit.killer}
 	if unit.has_trigger("on_death"):
 		var repeats := 2 if _side_has_passive(unit.side, "deathrattle_twice") else 1
@@ -293,6 +312,7 @@ func _handle_death(unit: WsUnit) -> void:
 		copy.hp = 1
 		copy.max_hp = 1
 		copy.keywords.erase("reborn")
+		copy.root_uid = unit.root_uid
 		if _place(unit.side, pos, copy):
 			_emit({"ev": "reborn", "uid": copy.uid, "id": copy.id, "side": copy.side, "pos": _position(copy), "atk": copy.atk, "hp": copy.hp})
 			for ally: WsUnit in _living(unit.side):
@@ -338,6 +358,7 @@ func _fire(unit: WsUnit, ability: Dictionary, ctx: Dictionary) -> void:
 		return
 	_depth += 1
 	var effect: String = ability.get("effect", "")
+	_count(unit, "abilities", 1)
 	_emit({"ev": "ability", "uid": unit.uid, "trigger": ability.get("trigger", ""), "effect": effect})
 	match effect:
 		"summon":
@@ -410,6 +431,8 @@ func _apply(source: WsUnit, ability: Dictionary, target: WsUnit, ctx: Dictionary
 			target.atk += add_atk
 			target.hp += add_hp
 			target.max_hp += add_hp
+			_count(source, "buff_atk", add_atk)
+			_count(source, "buff_hp", add_hp)
 			var keyword: String = ability.get("keyword", "")
 			if keyword != "":
 				target.keywords[keyword] = true
@@ -487,6 +510,8 @@ func _summon(source: WsUnit, ability: Dictionary, ctx: Dictionary) -> void:
 		var unit := _spawn(id, level, source.side, -1)
 		if unit == null or not _place(source.side, pos + (t if mode == "bg" else 0), unit):
 			return
+		unit.root_uid = source.root_uid
+		_count(source, "summons", 1)
 		_emit({"ev": "summon", "uid": unit.uid, "id": id, "side": unit.side, "pos": _position(unit), "atk": unit.atk, "hp": unit.hp, "level": unit.level})
 		for ally: WsUnit in _living(source.side):
 			_fire_listener(ally, "on_summon", unit, {"trigger_unit": unit})
@@ -513,6 +538,46 @@ func _record_permanent(target: WsUnit, add_atk: int, add_hp: int, keyword: Strin
 	if keyword != "" and not entry["keywords"].has(keyword):
 		entry["keywords"].append(keyword)
 	_permanent[target.side][target.origin_slot] = entry
+
+
+# --- Statistik ---
+
+func _count(unit: WsUnit, key: String, amount: int) -> void:
+	if unit != null and amount > 0:
+		unit.stats[key] = int(unit.stats.get(key, 0)) + amount
+
+
+## Je Seite eine Liste aller Einheiten, die im Kampf waren, in Reihenfolge ihres Erscheinens:
+## {"uid", "root", "id", "level", "slot" (Teamplatz, -1 bei Beschwörungen), "alive", STAT_KEYS ...}.
+## Für die Zuordnung zum Team: alle Einträge mit gleichem "root" gehören zur Einheit mit uid == root.
+func _collect_stats() -> Array:
+	var result: Array = [[], []]
+	for unit: WsUnit in _all_units:
+		var entry := {"uid": unit.uid, "root": unit.root_uid, "id": unit.id, "level": unit.level,
+			"slot": unit.origin_slot, "alive": unit.alive and unit.hp > 0}
+		entry.merge(unit.stats)
+		result[unit.side].append(entry)
+	return result
+
+
+## Statistik je Teameinheit, Beschwörungen eingerechnet: {"uid", "id", "level", "slot", STAT_KEYS ...}.
+static func team_totals(side_stats: Array) -> Array:
+	var by_root := {}
+	var order: Array = []
+	for entry: Dictionary in side_stats:
+		if entry["uid"] == entry["root"]:
+			var total := {"uid": entry["uid"], "id": entry["id"], "level": entry["level"], "slot": entry["slot"], "alive": entry["alive"]}
+			for key in STAT_KEYS:
+				total[key] = 0
+			by_root[entry["uid"]] = total
+			order.append(entry["uid"])
+	for entry: Dictionary in side_stats:
+		var total: Variant = by_root.get(entry["root"])
+		if total == null:
+			continue
+		for key in STAT_KEYS:
+			total[key] += int(entry.get(key, 0))
+	return order.map(func(uid: int) -> Dictionary: return by_root[uid])
 
 
 # --- Brett ---
@@ -571,6 +636,10 @@ func _spawn(id: String, level: int, side: int, origin_slot: int) -> WsUnit:
 	unit.passives = stats["passives"]
 	unit.abilities = stats["abilities"]
 	unit.origin_slot = origin_slot
+	unit.root_uid = unit.uid
+	for key in STAT_KEYS:
+		unit.stats[key] = 0
+	_all_units.append(unit)
 	return unit
 
 

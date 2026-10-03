@@ -174,3 +174,41 @@ func test_grid_hits_front_row_first() -> void:
 	var result := H.combat(rs, "grid").simulate([H.t("hitter", 1)], [H.t("front", 2), H.t("back", 4)], 1)
 	var front_uid: int = H.uids(result, 1)[0]
 	assert_int(H.events_of(result, "attack")[0]["to"]).is_equal(front_uid)
+
+
+# --- Statistik ---
+
+func test_stats_count_effective_damage_kills_and_summons() -> void:
+	var rs := H.ruleset([
+		H.unit("caller", 1, 1, {"abilities": [{"trigger": "on_death", "effect": "summon", "token": "tok"}]}),
+		H.unit("dummy", 0, 3), H.unit("biter", 1, 3), H.unit("big", 10, 100),
+	], [H.unit("tok", 5, 1)])
+	# big (10 Angriff) trifft dummy (3 HP): effektiv 3 Schaden, 1 Kill.
+	var r1 := H.combat(rs).simulate([H.t("big", 0)], [H.t("dummy", 0)], 1)
+	var big: Dictionary = r1["stats"][0][0]
+	assert_int(big["damage"]).is_equal(3)
+	assert_int(big["kills"]).is_equal(1)
+	assert_int(r1["stats"][1][0]["taken"]).is_equal(3)
+	# Spielstein-Schaden zählt für die Beschwörerin: biter (3 HP) wird nur von unserer Seite getroffen.
+	var r2 := H.combat(rs).simulate([H.t("caller", 0)], [H.t("biter", 0)], 2)
+	var totals := WsCombat.team_totals(r2["stats"][0])
+	assert_int(totals.size()).is_equal(1)
+	assert_str(totals[0]["id"]).is_equal("caller")
+	assert_int(totals[0]["summons"]).is_equal(1)
+	assert_int(totals[0]["damage"]).is_equal(3)
+
+
+func test_stats_count_shields_popped() -> void:
+	var rs := H.ruleset([H.unit("hitter", 3, 100), H.unit("shielded", 0, 3, {"keywords": ["divine_shield"]})])
+	var r := H.combat(rs).simulate([H.t("hitter", 0)], [H.t("shielded", 0)], 1)
+	assert_int(r["stats"][0][0]["shields_popped"]).is_equal(1)
+	assert_int(r["stats"][0][0]["damage"]).is_equal(3)
+
+
+func test_damage_to_allies_counts_separately() -> void:
+	var rs := H.ruleset([H.unit("bomb", 0, 20, {"abilities": [{"trigger": "start_of_combat", "effect": "damage", "target": "all_others", "value": 3}]}),
+		H.unit("weak", 0, 3)])
+	var r := H.combat(rs).simulate([H.t("bomb", 0), H.t("weak", 1)], [H.t("weak", 0), H.t("weak", 1)], 1)
+	var bomb: Dictionary = r["stats"][0][0]
+	assert_int(bomb["damage"]).is_equal(6)
+	assert_int(bomb["friendly_damage"]).is_equal(3)

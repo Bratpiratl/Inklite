@@ -290,6 +290,8 @@ func fight(ghost: Dictionary = {}) -> Dictionary:
 		"day": day, "seed": seed_value, "ghost_id": ghost.get("id", ""), "result": outcome,
 		"attacks": result["attacks"], "ticks": result["ticks"], "winner": result["winner"],
 		"ghost_strength": ghost.get("strength", -1), "difficulty": difficulty,
+		"stats": result["stats"], "team_stats": WsCombat.team_totals(result["stats"][0]),
+		"enemy_stats": WsCombat.team_totals(result["stats"][1]),
 		"survivors": result["survivors"], "lost_lives": lost_lives, "team": mine,
 	}
 	if trace:
