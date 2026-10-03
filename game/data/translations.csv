@@ -391,7 +391,7 @@ WSHELP_LOSS_ONE,an Tag {a} je {n},day {a}: {n} each
 WSHELP_LOSS_RANGE,an Tag {a} bis {b} je {n},days {a} to {b}: {n} each
 WSHELP_LOSS_FROM,ab Tag {a} je {n},from day {a}: {n} each
 WSHELP_DAY_T,Ein Tag,A day
-WSHELP_DAY,Jeder Tag hat eine Shop-Phase ohne Zeitlimit. Mit Kampf! tritt dein Team automatisch gegen das gespeicherte Team eines anderen Spielers an.,Every day has a shop phase without a time limit. With Fight! your team automatically battles another player's saved team.
+WSHELP_DAY,"Jeder Tag hat eine Shop-Phase ohne Zeitlimit. Mit Kampf! tritt dein Team automatisch gegen ein gespeichertes Gegnerteam an. Wie stark es ist, legt die Schwierigkeit fest.",Every day has a shop phase without a time limit. With Fight! your team automatically battles a saved enemy team. How strong it is depends on the difficulty.
 WSHELP_GOLD_T,Gold,Gold
 WSHELP_GOLD,"Am ersten Tag gibt es {gold} Gold, danach jeden Tag mehr. {keep} Würfeln kostet {reroll}, Sperren ist gratis und hält die Angebote bis morgen.","On the first day you get {gold} gold, then more each day. {keep} Rerolling costs {reroll}, locking is free and keeps the offers until tomorrow."
 WSHELP_SHOP_T,Shop,Shop
