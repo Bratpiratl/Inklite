@@ -314,10 +314,10 @@ WS_KW_venomous,Gift,Venom
 WS_KW_cleave,Spalt,Cleave
 WS_KW_stealth,Tarn,Stealth
 WS_KWL_taunt,Spott: Gegner müssen zuerst diese Einheit angreifen.,Taunt: enemies must attack this unit first.
-WS_KWL_divine_shield,"Schild: Der erste Treffer macht keinen Schaden, nur der Schild geht verloren.","Shield: the first hit deals no damage, only the shield breaks."
+WS_KWL_divine_shield,"Gottesschild: Fängt den ersten Treffer ab, danach ist der Schild weg.","Divine shield: blocks the first hit, then the shield is gone."
 WS_KWL_reborn,Wiedergeburt: Kehrt nach dem ersten Tod mit 1 Leben zurück.,Reborn: returns with 1 HP after its first death.
 WS_KWL_windfury,Windzorn: Greift zweimal hintereinander an.,Windfury: attacks twice in a row.
-WS_KWL_venomous,Gift: Jeder Treffer gegen eine Einheit tötet sie.,Venom: any hit on a unit destroys it.
+WS_KWL_venomous,"Giftig: Der erste Treffer tötet das Ziel, danach ist das Gift verbraucht.","Venomous: the first hit destroys the target, then the venom is used up."
 WS_KWL_cleave,Spalten: Trifft auch die Nachbarn des Ziels.,Cleave: also hits the target's neighbours.
 WS_KWL_stealth,"Tarnung: Kann erst angegriffen werden, wenn sie selbst angegriffen hat.",Stealth: can't be attacked until it has attacked.
 WS_TRIG_start_of_combat,Kampfbeginn,Start of combat
@@ -376,3 +376,36 @@ WS_RARITY_2,Selten,Rare
 WS_RARITY_3,Sehr selten,Super rare
 WS_RARITY_4,Legendär,Legendary
 WS_NO_RULESET,Kein Regelsatz gefunden.,No rule set found.
+HISTORY_META_WS,"{date}, Tag {day}, {difficulty}","{date}, day {day}, {difficulty}"
+WS_STATS,Statistik,Stats
+WS_STATS_T,Kampfstatistik,Battle stats
+WS_MVP,"MVP: {name}, {n} Schaden","MVP: {name}, {n} damage"
+WS_STAT_DAMAGE,{n} Schaden,{n} dmg
+WS_STAT_LINE,{kills} Kills · {taken} erlitten · Support {support},{kills} kills · {taken} taken · support {support}
+WS_SUPPORT,+{atk}/+{hp},+{atk}/+{hp}
+WS_STAT_SHIELDS,{n} Schilde geknackt,{n} shields popped
+WS_STAT_SUMMONS,{n} beschworen,{n} summoned
+WSHELP_GOAL_T,Ziel,Goal
+WSHELP_GOAL,Gewinne {wins} Kämpfe. Du startest mit {lives} Leben. Eine Niederlage kostet Leben: {losses}. {second},Win {wins} battles. You start with {lives} lives. A loss costs lives: {losses}. {second}
+WSHELP_LOSS_ONE,an Tag {a} je {n},day {a}: {n} each
+WSHELP_LOSS_RANGE,an Tag {a} bis {b} je {n},days {a} to {b}: {n} each
+WSHELP_LOSS_FROM,ab Tag {a} je {n},from day {a}: {n} each
+WSHELP_DAY_T,Ein Tag,A day
+WSHELP_DAY,Jeder Tag hat eine Shop-Phase ohne Zeitlimit. Mit Kampf! tritt dein Team automatisch gegen das gespeicherte Team eines anderen Spielers an.,Every day has a shop phase without a time limit. With Fight! your team automatically battles another player's saved team.
+WSHELP_GOLD_T,Gold,Gold
+WSHELP_GOLD,"Am ersten Tag gibt es {gold} Gold, danach jeden Tag mehr. {keep} Würfeln kostet {reroll}, Sperren ist gratis und hält die Angebote bis morgen.","On the first day you get {gold} gold, then more each day. {keep} Rerolling costs {reroll}, locking is free and keeps the offers until tomorrow."
+WSHELP_SHOP_T,Shop,Shop
+WSHELP_SHOP,"Der Shop-Rang steigt jeden Tag und bringt seltenere Einheiten, die Chancen stehen über dem Shop. Einheiten kosten {min} bis {max} Gold. Verkaufen bringt die Hälfte des Werts zurück.","The shop rank rises every day and brings rarer units, the odds are shown above the shop. Units cost {min} to {max} gold. Selling returns half the value."
+WSHELP_TEAM_T,Team und Bank,Team and bench
+WSHELP_TEAM,"Bis zu {team} Einheiten kämpfen im Team, {bench} weitere warten auf der Bank. Ziehe Einheiten, um sie umzustellen, und Angebote, um sie direkt auf einen Platz zu kaufen.","Up to {team} units fight in the team, {bench} more wait on the bench. Drag units to rearrange them, and offers to buy them straight onto a slot."
+WSHELP_MERGE_T,Verschmelzen,Merging
+WSHELP_MERGE,"{merge1} gleiche auf Stufe 1 ergeben Stufe 2, {merge2} gleiche auf Stufe 2 ergeben Stufe 3. Werte und Effekte werden {scale2}-fach bzw. {scale3}-fach so stark.","{merge1} of a kind at level 1 make level 2, {merge2} of a kind at level 2 make level 3. Stats and effects become {scale2} or {scale3} times as strong."
+WSHELP_COMBAT_T,Kampf,Combat
+WSHELP_COMBAT,"Die Reihe greift von links nach rechts an, die Seiten wechseln sich ab. Das Ziel ist zufällig, Einheiten mit Spott werden zuerst angegriffen. Bei jedem Angriff teilen beide Seiten Schaden aus. Nach dem Kampf zeigt Statistik, wer wie viel beigetragen hat.","The row attacks from left to right, the sides take turns. Targets are random, units with taunt are attacked first. Both sides deal damage on every attack. After the fight, Stats shows who contributed how much."
+WSHELP_COLORS_T,Farben,Colours
+WSHELP_COLORS,Viele Effekte wirken nur auf Einheiten einer bestimmten Farbe. Manche Einheiten haben zwei Farben und zählen für beide.,Many effects only work on units of a certain colour. Some units have two colours and count for both.
+WSHELP_DIFFICULTY_T,Schwierigkeit,Difficulty
+WSHELP_DIFFICULTY,"Vor dem Run wählst du, wie stark die Gegner sind ({levels}). Im Kampf steht oben die Gegnerstärke von 0 bis 100.",Before the run you choose how strong the enemies are ({levels}). During a fight the enemy strength from 0 to 100 is shown at the top.
+WS_DIFF_NAME_leicht,Leicht,Easy
+WS_DIFF_NAME_mittel,Mittel,Medium
+WS_DIFF_NAME_schwer,Schwer,Hard

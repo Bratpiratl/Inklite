@@ -9,10 +9,6 @@ const BOB_TIME := 0.5
 @onready var _start: Button = %StartButton
 @onready var _parade: HBoxContainer = %Parade
 
-## Der klassische Modus (12 Monster, 3x3-Raster) bleibt über einen kleinen Knopf erreichbar.
-static var _classic := false
-
-
 func _ready() -> void:
 	_continue.pressed.connect(_on_continue)
 	_start.pressed.connect(_on_start)
@@ -23,7 +19,7 @@ func _ready() -> void:
 	%SettingsButton.pressed.connect(func() -> void: Session.goto(Session.SETTINGS_SCENE))
 	%HelpButton.pressed.connect(func() -> void: Session.open_help(Session.TITLE_SCENE))
 	%ClassicButton.pressed.connect(func() -> void:
-		_classic = not _classic
+		Session.classic_mode = not Session.classic_mode
 		Audio.play("click")
 		_show_mode())
 	%VersionLabel.text = Loc.t("VERSION", {"v": RunLogger.version()})
@@ -36,21 +32,20 @@ func _ready() -> void:
 func _show_mode() -> void:
 	var has_workshop := FileAccess.file_exists(Session.WORKSHOP_DATA)
 	if not has_workshop:
-		_classic = true
-	var has_save := Session.has_save() if _classic else Session.has_workshop_save()
+		Session.classic_mode = true
+	var has_save := Session.has_save() if Session.classic_mode else Session.has_workshop_save()
 	_continue.visible = has_save
 	# Die wichtigste Aktion bekommt den hellen Button.
 	_start.theme_type_variation = &"" if has_save else &"PrimaryButton"
 	_continue.theme_type_variation = &"PrimaryButton"
-	%WorkshopButton.visible = has_workshop and not _classic
-	%HistoryButton.visible = _classic
-	%Subtitle.text = Loc.t("TITLE_CLASSIC" if _classic else "TITLE_SUBTITLE")
+	%WorkshopButton.visible = has_workshop and not Session.classic_mode
+	%Subtitle.text = Loc.t("TITLE_CLASSIC" if Session.classic_mode else "TITLE_SUBTITLE")
 	%ClassicButton.visible = has_workshop
-	%ClassicButton.text = Loc.t("BTN_CLASSIC_BACK" if _classic else "BTN_CLASSIC")
+	%ClassicButton.text = Loc.t("BTN_CLASSIC_BACK" if Session.classic_mode else "BTN_CLASSIC")
 
 
 func _on_start() -> void:
-	if _classic:
+	if Session.classic_mode:
 		Session.goto(Session.TRAINER_SCENE)
 		return
 	Session.workshop_test = false
@@ -59,7 +54,7 @@ func _on_start() -> void:
 
 
 func _on_continue() -> void:
-	if not _classic:
+	if not Session.classic_mode:
 		Session.workshop_test = false
 		Session.workshop_continue = true
 		Session.goto(Session.WORKSHOP_SCENE)

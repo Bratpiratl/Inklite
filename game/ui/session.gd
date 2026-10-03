@@ -45,6 +45,8 @@ func new_run(trainer_id: String) -> void:
 	save()
 
 
+## Titel im klassischen Modus (12 Monster, 3x3-Raster): Anleitung und Historie zeigen dann den alten Modus.
+var classic_mode := false
 ## true: Workshop-Testbereich (Regelsatz-Info, BG oder Raster, kein Speichern). false: normales Spiel.
 var workshop_test := true
 ## Beim Öffnen der Workshop-Szene den gespeicherten Run fortsetzen.

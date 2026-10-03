@@ -83,6 +83,7 @@ var _lines: Array = [[], []]
 var _line_boxes: Array = []
 var _grid_cells: Array = [[], []]
 var _dead: Array[UnitCell] = []
+var _recorded := false
 
 
 func _ready() -> void:
@@ -392,6 +393,10 @@ func _save_run() -> void:
 		return
 	if run.is_over():
 		Session.clear_workshop_save()
+		if not _recorded:
+			_recorded = true
+			RunHistory.add_ws({"difficulty": _difficulty_name(run.difficulty), "wins": run.wins, "day": run.day - 1,
+				"victory": run.is_victory(), "team": run.team_units().map(func(u: Dictionary) -> String: return u["id"])})
 		return
 	var file := FileAccess.open(Session.WORKSHOP_SAVE, FileAccess.WRITE)
 	if file != null:
@@ -466,7 +471,7 @@ func _add_difficulty(box: VBoxContainer) -> void:
 		var group := ButtonGroup.new()
 		var buttons: Array[Button] = []
 		for level: Dictionary in levels:
-			var button := _button(str(level.get("name", level["id"])), &"", Callable(), 48, 15)
+			var button := _button(_difficulty_name(level["id"]), &"", Callable(), 48, 15)
 			button.toggle_mode = true
 			button.button_group = group
 			button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -494,6 +499,8 @@ func _mark_difficulty(buttons: Array[Button], levels: Array, hint: Label) -> voi
 
 
 func _difficulty_name(id: String) -> String:
+	if _tr("WS_DIFF_NAME_", id) != id:
+		return _tr("WS_DIFF_NAME_", id)
 	for level: Dictionary in rs.section("run").get("difficulties", []):
 		if level["id"] == id:
 			return str(level.get("name", id))
@@ -504,6 +511,7 @@ func _new_run(combat_mode: String) -> void:
 	mode = combat_mode
 	run = WsRun.create(rs, int(Time.get_unix_time_from_system()) % 2147483647, combat_mode, difficulty)
 	run.trace = true
+	_recorded = false
 	Audio.play("click")
 	_show_shop()
 
@@ -1203,9 +1211,135 @@ func _finish_battle(battle: Dictionary, result_label: Label, controls: HBoxConta
 		Haptics.pulse(Haptics.WIN)
 	for child in controls.get_children():
 		child.queue_free()
+	if battle.has("team_stats"):
+		var stats := _button(Loc.t("WS_STATS"), &"", _show_stats.bind(battle), 56, 16)
+		stats.custom_minimum_size.x = 120
+		controls.add_child(stats)
 	var next := _button(Loc.t("WS_NEXT"), &"PrimaryButton", _after_battle, 56, 20)
 	next.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	controls.add_child(next)
+
+
+# --- Kampfstatistik ---
+
+## Übersicht über dem Kampf: MVP oben, darunter je Einheit Schaden als Balken, Kills, erlittener Schaden
+## und Support (Stärkungen, geknackte Schilde). Umschalten zwischen eigenem Team und Gegner.
+func _show_stats(battle: Dictionary) -> void:
+	var overlay := PanelContainer.new()
+	_page.add_child(_fill(overlay))
+	var box := _vbox(6)
+	overlay.add_child(box)
+	var title := _label(Loc.t("WS_STATS_T"), 18)
+	title.add_theme_color_override("font_color", Color(0.92549, 0.827451, 0.576471))
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	box.add_child(title)
+	var mvp := _mvp(battle)
+	if not mvp.is_empty():
+		var line := _hbox(8)
+		line.alignment = BoxContainer.ALIGNMENT_CENTER
+		line.add_child(_stat_icon(mvp["id"], 40, true))
+		var text := _label(Loc.t("WS_MVP", {"name": _unit_name(mvp["id"]), "n": int(mvp["damage"])}), 14)
+		text.add_theme_color_override("font_color", COLOR_ABILITY)
+		text.autowrap_mode = TextServer.AUTOWRAP_OFF
+		line.add_child(text)
+		box.add_child(line)
+	var tabs := _hbox(6)
+	box.add_child(tabs)
+	var scroll := ScrollContainer.new()
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	box.add_child(scroll)
+	var rows := _vbox(8)
+	rows.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	scroll.add_child(rows)
+	var group := ButtonGroup.new()
+	for side in ["team_stats", "enemy_stats"]:
+		var tab := _button(Loc.t("WS_YOUR_TEAM" if side == "team_stats" else "WS_ENEMY"), &"", Callable(), 48, 15)
+		tab.toggle_mode = true
+		tab.button_group = group
+		tab.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		tab.toggled.connect(func(on: bool) -> void:
+			tab.theme_type_variation = &"PrimaryButton" if on else &""
+			if on:
+				_fill_stats(rows, battle.get(side, [])))
+		tabs.add_child(tab)
+	var close := _button(Loc.t("BTN_BACK"), &"PrimaryButton", overlay.queue_free, 52, 16)
+	box.add_child(close)
+	(tabs.get_child(0) as Button).button_pressed = true
+
+
+## MVP: bei einem Sieg die eigene Einheit mit dem meisten Schaden, sonst die beste gegnerische.
+func _mvp(battle: Dictionary) -> Dictionary:
+	var side: Array = battle.get("team_stats" if battle.get("result", "") == "win" else "enemy_stats", [])
+	var best := {}
+	for entry: Dictionary in side:
+		if best.is_empty() or int(entry["damage"]) > int(best["damage"]):
+			best = entry
+	return best
+
+
+func _fill_stats(rows: VBoxContainer, entries: Array) -> void:
+	for child in rows.get_children():
+		child.queue_free()
+	var top := 1
+	for entry: Dictionary in entries:
+		top = maxi(top, int(entry["damage"]))
+	var sorted := entries.duplicate()
+	sorted.sort_custom(func(a: Dictionary, b: Dictionary) -> bool: return int(a["damage"]) > int(b["damage"]))
+	for entry: Dictionary in sorted:
+		var row := _hbox(8)
+		rows.add_child(row)
+		row.add_child(_stat_icon(entry["id"], 36, bool(entry.get("alive", true))))
+		var col := _vbox(2)
+		col.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		row.add_child(col)
+		var head := _hbox(4)
+		col.add_child(head)
+		var unit_label := _label("%s %s" % [_unit_name(entry["id"]), Loc.t("LEVEL_SHORT", {"n": int(entry["level"])})], 12)
+		unit_label.autowrap_mode = TextServer.AUTOWRAP_OFF
+		unit_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		unit_label.clip_text = true
+		head.add_child(unit_label)
+		var damage := _label(Loc.t("WS_STAT_DAMAGE", {"n": int(entry["damage"])}), 12)
+		damage.autowrap_mode = TextServer.AUTOWRAP_OFF
+		damage.add_theme_color_override("font_color", COLOR_DAMAGE)
+		head.add_child(damage)
+		col.add_child(_stat_bar(float(entry["damage"]) / top))
+		var support := Loc.t("WS_SUPPORT", {"atk": int(entry["buff_atk"]), "hp": int(entry["buff_hp"])})
+		var line := Loc.t("WS_STAT_LINE", {"kills": int(entry["kills"]), "taken": int(entry["taken"]), "support": support})
+		if int(entry.get("shields_popped", 0)) > 0:
+			line += " · " + Loc.t("WS_STAT_SHIELDS", {"n": int(entry["shields_popped"])})
+		if int(entry.get("summons", 0)) > 0:
+			line += " · " + Loc.t("WS_STAT_SUMMONS", {"n": int(entry["summons"])})
+		var small := _label(line, 10)
+		small.add_theme_color_override("font_color", Color(0.78, 0.76, 0.86))
+		col.add_child(small)
+
+
+func _stat_icon(id: String, size_px: int, alive: bool) -> TextureRect:
+	var icon := TextureRect.new()
+	icon.texture = _texture(id)
+	icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	icon.custom_minimum_size = Vector2(size_px, size_px)
+	icon.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	if not alive:
+		icon.modulate = Color(0.55, 0.55, 0.6, 0.8)
+	return icon
+
+
+func _stat_bar(ratio: float) -> Control:
+	var bar := Control.new()
+	bar.custom_minimum_size = Vector2(0, 6)
+	var back := ColorRect.new()
+	back.color = Color(0.0784314, 0.0588235, 0.117647)
+	bar.add_child(back)
+	back.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	var fill := ColorRect.new()
+	fill.color = COLOR_DAMAGE
+	bar.add_child(fill)
+	fill.anchor_bottom = 1.0
+	fill.anchor_right = clampf(ratio, 0.0, 1.0)
+	return bar
 
 
 func _after_battle() -> void:
