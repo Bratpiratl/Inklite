@@ -5,7 +5,7 @@
 #   Die Pages-Action ruft es mit --data workshop/public/jinto_bg --out build/web/workshop auf.
 #   GODOT=<pfad> setzt das Godot-Programm (Standard: godot).
 #
-# Arbeitet auf einer Kopie von game/: dort wird tools/ws_play.tscn zur Hauptszene, der Regelsatz
+# Arbeitet auf einer Kopie von game/: dort wird ui/ws_play.tscn zur Hauptszene, der Regelsatz
 # kommt nach res://ws_data/ und PWA wird abgeschaltet. Das Repo selbst bleibt unverändert.
 # Ergebnis: workshop/play/<regelsatz>/index.html, ausgeliefert vom Editor unter /play/<regelsatz>/.
 set -euo pipefail
@@ -33,12 +33,10 @@ mkdir -p "$WORK/game/ws_data"
 cp "$SRC/ruleset.json" "$SRC/units.json" "$WORK/game/ws_data/"
 [ -f "$SRC/ghosts.json" ] && cp "$SRC/ghosts.json" "$WORK/game/ws_data/"
 
-sed -i 's|^run/main_scene=.*|run/main_scene="res://tools/ws_play.tscn"|' "$WORK/game/project.godot"
+sed -i 's|^run/main_scene=.*|run/main_scene="res://ui/ws_play.tscn"|' "$WORK/game/project.godot"
 sed -i 's|^progressive_web_app/enabled=.*|progressive_web_app/enabled=false|' "$WORK/game/export_presets.cfg"
 # JSON-Dateien außerhalb von data/ mit exportieren.
 sed -i 's|^include_filter=.*|include_filter="*.json"|' "$WORK/game/export_presets.cfg"
-# Das öffentliche Preset lässt tools/ weg; hier muss die Test-Szene mit hinein.
-sed -i 's|^exclude_filter=.*|exclude_filter="addons/gdUnit4/*, test/*, reports/*"|' "$WORK/game/export_presets.cfg"
 
 echo "Importiere ..."
 "$GODOT" --headless --path "$WORK/game" --import >/dev/null 2>&1 || true
