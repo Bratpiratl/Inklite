@@ -27,6 +27,15 @@ func pick(items: Array) -> Variant:
 	return items[next_int(items.size())]
 
 
+## Zustand zum Speichern, als Text: JSON kann 64-Bit-Zahlen nicht exakt halten.
+func get_state() -> String:
+	return str(_rng.state)
+
+
+func set_state(state: String) -> void:
+	_rng.state = state.to_int()
+
+
 ## Fisher-Yates, verändert die übergebene Liste.
 func shuffle(items: Array) -> void:
 	for i in range(items.size() - 1, 0, -1):

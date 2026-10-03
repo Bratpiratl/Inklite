@@ -201,3 +201,35 @@ func test_difficulty_band_picks_matching_strength() -> void:
 	assert_int(rs.ghost_pool(1, 0, "").size()).is_equal(10)
 	var run := WsRun.create(rs, 1, "", "schwer")
 	assert_str(run.difficulty).is_equal("schwer")
+
+
+func test_save_and_load_continues_identically() -> void:
+	var rs := _rs()
+	var a := WsRun.create(rs, 77, "grid", "")
+	a.gold = 200
+	a.buy(0)
+	a.reroll()
+	a.buy(1, 3)
+	var saved: Dictionary = JSON.parse_string(JSON.stringify(a.to_save()))
+	var b := WsRun.from_save(rs, saved)
+	assert_object(b).is_not_null()
+	assert_str(JSON.stringify(b.to_save())).is_equal(JSON.stringify(a.to_save()))
+	# Danach dieselben Aktionen: gleiche Angebote, gleiche Kämpfe.
+	for run: WsRun in [a, b]:
+		run.reroll()
+		run.fight({"id": "x", "team": [{"id": "c2", "level": 1, "slot": 0}]})
+		run.reroll()
+	assert_str(JSON.stringify(b.to_save())).is_equal(JSON.stringify(a.to_save()))
+	assert_int(b.last_battle["seed"]).is_equal(a.last_battle["seed"])
+
+
+func test_load_drops_units_missing_from_ruleset() -> void:
+	var rs := _rs()
+	var run := WsRun.create(rs, 1)
+	var saved := run.to_save()
+	saved["team"][0] = {"id": "gibt_es_nicht", "level": 2, "atk_bonus": 0, "hp_bonus": 0, "keywords": []}
+	saved["team"][1] = {"id": "c1", "level": 2, "atk_bonus": 1, "hp_bonus": 0, "keywords": []}
+	var loaded := WsRun.from_save(rs, saved)
+	assert_object(loaded.team[0]).is_null()
+	assert_int(loaded.team[1]["level"]).is_equal(2)
+	assert_object(WsRun.from_save(rs, {"v": 99})).is_null()

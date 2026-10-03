@@ -58,6 +58,63 @@ static func create(ruleset: WsRuleset, seed_value: int, mode_override: String = 
 	return run
 
 
+# --- Speichern und Laden ---
+
+const SAVE_VERSION := 1
+
+
+## Kompletter Zustand als Dictionary (JSON-tauglich). Mit from_save geht der Run exakt gleich weiter.
+func to_save() -> Dictionary:
+	return {
+		"v": SAVE_VERSION, "day": day, "gold": gold, "lives": lives, "wins": wins, "losses": losses, "draws": draws,
+		"rank_bonus": rank_bonus, "free_rerolls": free_rerolls, "second_chance_used": second_chance_used,
+		"team": team.duplicate(true), "bench": bench.duplicate(true), "offers": offers.duplicate(true), "locked": locked,
+		"difficulty": difficulty, "mode": _combat.mode, "rng": _rng.get_state(),
+	}
+
+
+## Gegenstück zu to_save. Einheiten, die es im Regelsatz nicht mehr gibt (nach einem Update), fallen weg.
+## Liefert null bei unbekanntem Format.
+static func from_save(ruleset: WsRuleset, raw: Dictionary) -> WsRun:
+	var data: Dictionary = GameData.normalize_ints(raw)
+	if int(data.get("v", 0)) != SAVE_VERSION:
+		return null
+	var run := WsRun.new()
+	run.rs = ruleset
+	for key in ["day", "gold", "lives", "wins", "losses", "draws", "rank_bonus", "free_rerolls"]:
+		run.set(key, int(data.get(key, 0)))
+	run.second_chance_used = bool(data.get("second_chance_used", false))
+	run.locked = bool(data.get("locked", false))
+	run.difficulty = str(data.get("difficulty", ""))
+	run.team = _restore_slots(ruleset, data.get("team", []), ruleset.team_slots())
+	run.bench = _restore_slots(ruleset, data.get("bench", []), ruleset.bench_slots())
+	run.offers = []
+	run.offers.resize(int(ruleset.section("shop").get("slots", 5)))
+	var saved_offers: Array = data.get("offers", [])
+	for i in mini(saved_offers.size(), run.offers.size()):
+		var offer: Variant = saved_offers[i]
+		if offer is Dictionary and not ruleset.get_def(str(offer.get("id", ""))).is_empty():
+			run.offers[i] = {"id": str(offer["id"]), "cost": int(offer.get("cost", 0))}
+	run._rng = GameRng.new(0)
+	run._rng.set_state(str(data.get("rng", "0")))
+	run._combat = WsCombat.new(ruleset, str(data.get("mode", "")))
+	return run
+
+
+static func _restore_slots(ruleset: WsRuleset, saved: Array, size: int) -> Array:
+	var slots: Array = []
+	slots.resize(size)
+	for i in mini(saved.size(), size):
+		var unit: Variant = saved[i]
+		if unit is Dictionary and not ruleset.get_def(str(unit.get("id", ""))).is_empty():
+			slots[i] = {
+				"id": str(unit["id"]), "level": int(unit.get("level", 1)),
+				"atk_bonus": int(unit.get("atk_bonus", 0)), "hp_bonus": int(unit.get("hp_bonus", 0)),
+				"keywords": unit.get("keywords", []).duplicate(),
+			}
+	return slots
+
+
 # --- Abfragen ---
 
 func rank() -> int:

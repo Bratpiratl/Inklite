@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
-"""Legt eine bereinigte Kopie eines Regelsatzes nach workshop/public/<name>/ für den öffentlichen Test-Build.
+"""Legt eine bereinigte Kopie eines Regelsatzes als Spieldaten nach game/data/workshop/ (Standardspiel und Test-Build).
 
 Aufruf: python3 workshop/export_public.py [regelsatz]   (Standard: jinto_bg)
 
 Entfernt alles, was Namen oder Texte aus fremden Spielen enthält: "ref" (BG-Name, BG-Kartentext,
 Batomon-Platz) und "note" (Vereinfachungen mit BG-Begriffen). Übrig bleiben eigene Platzhalternamen, Zahlen und die eigenen
-Fähigkeits-Definitionen. Danach committen und pushen: die Pages-Action baut den Test-Build
-nach /Inklite/workshop/.
+Fähigkeits-Definitionen. Danach committen und pushen: das Spiel nutzt die Daten direkt, die
+Pages-Action baut zusätzlich den Test-Build nach /Inklite/workshop/.
 """
 import json
 import sys
@@ -20,7 +20,7 @@ FORBIDDEN = ("bg_name", "bg_text", "slot_name", "slot_id", "bg_id", "Blutjuwel",
 def main():
     name = sys.argv[1] if len(sys.argv) > 1 else "jinto_bg"
     src = HERE / "rulesets" / name
-    dst = HERE / "public" / name
+    dst = REPO / "game" / "data" / "workshop"
     dst.mkdir(parents=True, exist_ok=True)
 
     ruleset = json.loads((src / "ruleset.json").read_text())

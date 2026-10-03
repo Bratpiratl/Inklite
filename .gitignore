@@ -25,5 +25,3 @@ workshop/rulesets/
 workshop/runs/
 workshop/play/
 workshop/editor/config.local.json
-# Kopie von workshop/public/jinto_bg/ fürs Hauptspiel, entsteht beim Deploy
-game/ws_data/

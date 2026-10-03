@@ -11,6 +11,8 @@ const KEYWORDS: Array[String] = ["taunt", "divine_shield", "reborn", "windfury",
 ## Auswahl für give_keyword mit keyword "random", wie die Bonus-Schlüsselwörter in BG.
 const RANDOM_KEYWORDS: Array[String] = ["taunt", "divine_shield", "reborn", "windfury", "venomous"]
 const SCALED_FIELDS: Array[String] = ["atk", "hp", "value", "times"]
+## Regelsatz des Standardspiels (bereinigt, aus workshop/export_public.py).
+const GAME_DATA_DIR := "res://data/workshop"
 
 var dir: String
 var rules: Dictionary = {}
@@ -29,6 +31,9 @@ static func load_dir(path: String) -> WsRuleset:
 	var rs := WsRuleset.new()
 	if not path.is_absolute_path():
 		path = ProjectSettings.globalize_path("res://").path_join("..").path_join(path)
+	# Test-Builds legen den Regelsatz nach res://ws_data, das Spiel hat ihn unter res://data/workshop.
+	if path == "res://ws_data" and not FileAccess.file_exists(path.path_join("ruleset.json")):
+		path = GAME_DATA_DIR
 	rs.dir = path.simplify_path()
 	var rules_data: Variant = GameData.load_json(rs.dir.path_join("ruleset.json"))
 	var units_data: Variant = GameData.load_json(rs.dir.path_join("units.json"))

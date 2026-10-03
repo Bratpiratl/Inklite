@@ -59,7 +59,6 @@ jobs:
         run: |
           mkdir -p build/web
           # Workshop-Regelsatz ins Hauptspiel, damit er im Titelmenü unter "Workshop" spielbar ist.
-          mkdir -p game/ws_data && cp workshop/public/jinto_bg/*.json game/ws_data/
           ~/godot/godot --headless --path game --import
           ~/godot/godot --headless --path game --export-release "Web" "$GITHUB_WORKSPACE/build/web/index.html"
           ls -la build/web
@@ -67,11 +66,11 @@ jobs:
             test -f "build/web/$f" || { echo "Fehlt: $f"; exit 1; }
           done
 
-      # Test-Build des Balancing-Workshops unter /workshop/, mit der bereinigten Kopie aus workshop/public/.
-      # Das Hauptspiel bleibt davon unberührt (sein Export lässt tools/ weg, die Daten liegen außerhalb von game/).
+      # Test-Build des Balancing-Workshops unter /workshop/, mit dem Regelsatz aus game/data/workshop/.
+      # Das Hauptspiel bleibt davon unberührt (eigene Hauptszene in einer Kopie von game/).
       - name: Workshop-Test-Build
         run: |
-          GODOT=~/godot/godot workshop/build_play.sh jinto_bg --data workshop/public/jinto_bg --out build/web/workshop
+          GODOT=~/godot/godot workshop/build_play.sh jinto_bg --data game/data/workshop --out build/web/workshop
           test -f build/web/workshop/index.pck
 
       - uses: actions/configure-pages@v5
