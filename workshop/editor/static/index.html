@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Inklite Workshop</title>
+<link rel="stylesheet" href="static/style.css">
+</head>
+<body>
+<header>
+  <h1>Inklite Workshop</h1>
+  <select id="ruleset-select" aria-label="Regelsatz"></select>
+  <span id="dirty" class="dirty" hidden>ungespeichert</span>
+  <button id="btn-save" class="primary" disabled>Speichern …</button>
+  <button id="btn-copy" title="Regelsatz kopieren, um eine Variante auszuprobieren">Kopie</button>
+</header>
+<nav id="tabs">
+  <button data-tab="units" class="active">Einheiten</button>
+  <button data-tab="shop">Shop &amp; Wirtschaft</button>
+  <button data-tab="rules">Regeln</button>
+  <button data-tab="sim">Simulation</button>
+  <button data-tab="log">Protokoll</button>
+  <button data-tab="help">Hilfe</button>
+</nav>
+<main>
+  <section id="tab-units" class="tab active"></section>
+  <section id="tab-shop" class="tab"></section>
+  <section id="tab-rules" class="tab"></section>
+  <section id="tab-sim" class="tab"></section>
+  <section id="tab-log" class="tab"></section>
+  <section id="tab-help" class="tab"></section>
+</main>
+<div id="panel" class="panel" hidden></div>
+<div id="modal" class="modal" hidden><div class="modal-box"></div></div>
+<div id="toast" class="toast" hidden></div>
+<script src="static/app.js"></script>
+</body>
+</html>

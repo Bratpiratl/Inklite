@@ -1,7 +1,7 @@
 class_name WsBots
 extends RefCounted
 ## Bots für Workshop-Runs (tools/ws_simulate.gd). Nur für Werkzeuge, nicht im Spiel.
-##   random:  kauft zufällig, würfelt manchmal neu, stellt nicht um. Untergrenze.
+##   random:  kauft zufällig, würfelt manchmal neu, verkauft bei vollem Brett manchmal, stellt nicht um. Untergrenze.
 ##   greedy:  kauft zuerst, was verschmilzt, sonst das Teuerste; verkauft Schwaches für Besseres.
 ##   synergy: wie greedy, bevorzugt aber eine Farbe und verkauft fremde Farben zuerst.
 ## Verhaltenswerte stehen im Regelsatz unter "bots".
@@ -46,6 +46,8 @@ func _act(run: WsRun) -> bool:
 	if kind == "random":
 		if not buyable.is_empty():
 			return run.buy(_rng.pick(buyable))["ok"]
+		if run.free_slot(WsRun.TEAM) < 0 and run.free_slot(WsRun.BENCH) < 0 and _rng.next_int(100) < 30:
+			return run.sell(WsRun.BENCH, _rng.next_int(run.bench.size()))["ok"]
 		if run.gold >= run.reroll_cost() and _rng.next_int(100) < int(_rules.get("random_reroll_percent", 40)):
 			return run.reroll()
 		return false

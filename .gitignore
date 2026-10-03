@@ -17,3 +17,10 @@ analysis/.venv/
 
 # Von Godot aus data/translations.csv erzeugt
 game/data/*.translation
+
+# Balancing-Workshop: Daten aus fremden Spielen und lokale Zugangsdaten, nie ins öffentliche Repo
+workshop/raw/
+workshop/mapping/
+workshop/rulesets/
+workshop/runs/
+workshop/editor/config.local.json
