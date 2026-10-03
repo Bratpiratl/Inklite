@@ -16,7 +16,9 @@ var dir: String
 var rules: Dictionary = {}
 var units: Dictionary = {}   # id -> Definition
 var tokens: Dictionary = {}  # id -> Definition
-var ghosts: Array = []       # gespeicherte Gegnerteams, je {"id", "day", "team"}
+var ghosts: Array = []       # gespeicherte Gegnerteams, je {"id", "day", "wins", "bot", "team"}
+## Gelernte Stärke je Einheit (bereinigte Winrate aus dem letzten Geister-Durchgang). Bots kaufen danach.
+var unit_values: Dictionary = {}
 
 var _ids_by_rarity: Array = []
 var _deathrattle_ids: Array[String] = []
@@ -39,6 +41,7 @@ static func load_dir(path: String) -> WsRuleset:
 		var ghost_data: Variant = GameData.load_json(ghost_path)
 		if ghost_data is Dictionary:
 			rs.ghosts = ghost_data.get("teams", [])
+			rs.unit_values = ghost_data.get("unit_values", {})
 	return rs
 
 
@@ -210,6 +213,29 @@ func slot_neighbors(slot: int) -> Array[int]:
 			result.append(slot + 1)
 	result.sort()
 	return result
+
+
+## Gegnerauswahl nach run.ghost_*: nur Geister bestimmter Bots, Tag verschoben, passend zur Siegzahl.
+##   ghost_bots: Liste der Bots, deren Teams als Gegner zählen (leer = alle)
+##   ghost_day_offset: Gegner vom Tag + Versatz (positiv = stärker)
+##   ghost_match_pool: aus den N Geistern mit der ähnlichsten Siegzahl ziehen (0 = alle des Tages)
+func ghost_pool(day: int, wins: int) -> Array:
+	var run_rules := section("run")
+	var pool := ghosts_for_day(maxi(day + int(run_rules.get("ghost_day_offset", 0)), 1))
+	var bots: Array = run_rules.get("ghost_bots", [])
+	if not bots.is_empty():
+		var filtered := pool.filter(func(g: Dictionary) -> bool: return bots.has(g.get("bot", "")))
+		if not filtered.is_empty():
+			pool = filtered
+	var n := int(run_rules.get("ghost_match_pool", 0))
+	if n > 0 and pool.size() > n:
+		pool = pool.duplicate()
+		pool.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
+			var da := absi(int(a.get("wins", 0)) - wins)
+			var db := absi(int(b.get("wins", 0)) - wins)
+			return da < db if da != db else str(a.get("id", "")) < str(b.get("id", "")))
+		pool = pool.slice(0, n)
+	return pool
 
 
 func ghosts_for_day(day: int) -> Array:

@@ -4,6 +4,7 @@ extends RefCounted
 ##   random:  kauft zufällig, würfelt manchmal neu, verkauft bei vollem Brett manchmal, stellt nicht um. Untergrenze.
 ##   greedy:  kauft zuerst, was verschmilzt, sonst das Teuerste; verkauft Schwaches für Besseres.
 ##   synergy: wie greedy, bevorzugt aber eine Farbe und verkauft fremde Farben zuerst.
+## greedy und synergy gewichten den Preis mit der gelernten Stärke (rs.unit_values, siehe ws_simulate --ghosts).
 ## Verhaltenswerte stehen im Regelsatz unter "bots".
 
 const NAMES: Array[String] = ["random", "greedy", "synergy"]
@@ -68,8 +69,15 @@ func _act(run: WsRun) -> bool:
 	return false
 
 
+## Faktor aus der gelernten bereinigten Winrate: 50 = 1.0, 65 = 1.3, 35 = 0.7.
+func value_factor(id: String) -> float:
+	if kind == "random" or not _rs.unit_values.has(id):
+		return 1.0
+	return clampf(1.0 + (float(_rs.unit_values[id]) - 50.0) / 50.0, 0.5, 1.6)
+
+
 func _offer_score(run: WsRun, id: String) -> int:
-	var score := _rs.cost(id)
+	var score := roundi(_rs.cost(id) * value_factor(id))
 	var copies := 0
 	for unit: Dictionary in run.owned_units():
 		if unit["id"] == id and int(unit["level"]) == 1:
@@ -89,7 +97,7 @@ func _offer_score(run: WsRun, id: String) -> int:
 func power(unit: Dictionary) -> int:
 	var mult: Array = _rs.section("economy").get("sell_level_multiplier", [1, 3, 6])
 	var level := int(unit["level"])
-	var value := _rs.cost(unit["id"]) * int(mult[clampi(level - 1, 0, mult.size() - 1)])
+	var value := roundi(_rs.cost(unit["id"]) * int(mult[clampi(level - 1, 0, mult.size() - 1)]) * value_factor(unit["id"]))
 	if _rs.is_token(unit["id"]):
 		value = 4 * level
 	value += 2 * (int(unit["atk_bonus"]) + int(unit["hp_bonus"]))

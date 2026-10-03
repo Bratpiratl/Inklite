@@ -170,3 +170,19 @@ func test_same_seed_same_run() -> void:
 	var a := WsRun.create(rs, 42)
 	var b := WsRun.create(rs, 42)
 	assert_str(JSON.stringify(a.offers)).is_equal(JSON.stringify(b.offers))
+
+
+func test_ghost_pool_filters_bots_and_matches_wins() -> void:
+	var rs := H.ruleset([H.unit("c1", 1, 1)], [], {"run": {"start_lives": 10, "wins_to_victory": 10, "max_days": 40,
+		"life_loss_by_day": [1], "ghost_bots": ["greedy"], "ghost_match_pool": 2, "ghost_day_offset": 1}})
+	rs.ghosts = [
+		{"id": "r", "day": 4, "wins": 3, "bot": "random", "team": []},
+		{"id": "g0", "day": 4, "wins": 0, "bot": "greedy", "team": []},
+		{"id": "g3", "day": 4, "wins": 3, "bot": "greedy", "team": []},
+		{"id": "g4", "day": 4, "wins": 4, "bot": "greedy", "team": []},
+		{"id": "early", "day": 3, "wins": 3, "bot": "greedy", "team": []},
+	]
+	# Tag 3 + Versatz 1 = Tag 4, nur greedy, die zwei mit der ähnlichsten Siegzahl zu 3.
+	var ids: Array = rs.ghost_pool(3, 3).map(func(g: Dictionary) -> String: return g["id"])
+	ids.sort()
+	assert_array(ids).is_equal(["g3", "g4"])

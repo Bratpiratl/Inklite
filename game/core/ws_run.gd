@@ -198,7 +198,7 @@ func fight(ghost: Dictionary = {}) -> Dictionary:
 		for r in repeats:
 			_fire_shop(ref["unit"], ref, "end_of_turn", {})
 	if ghost.is_empty():
-		var pool := rs.ghosts_for_day(day)
+		var pool := rs.ghost_pool(day, wins)
 		ghost = _rng.pick(pool) if not pool.is_empty() else {"id": "leer", "team": []}
 	var seed_value := _rng.next_int(2147483647)
 	var mine := battle_team()

@@ -63,6 +63,7 @@ func _simulate_runs(rs: WsRuleset, args: Dictionary, collect_ghosts: bool) -> vo
 	var seen := {}
 	var pool_rng := GameRng.new(base_seed * 31 + 7)
 	var stats := {}
+	var learn := {"battles": []}
 	var started := Time.get_ticks_msec()
 
 	for i in runs:
@@ -76,7 +77,9 @@ func _simulate_runs(rs: WsRuleset, args: Dictionary, collect_ghosts: bool) -> vo
 			bot.play_shop(run)
 			if collect_ghosts:
 				_collect_ghost(pool, seen, pool_rng, per_day, run, bot_name, i)
-			run.fight()
+			var b := run.fight()
+			if collect_ghosts and not b.is_empty():
+				_record_battle(learn, b)
 		_count(stats, bot_name, run)
 
 	if file != null:
@@ -85,6 +88,7 @@ func _simulate_runs(rs: WsRuleset, args: Dictionary, collect_ghosts: bool) -> vo
 	print("%d Runs in %.1f s (%s)" % [runs, elapsed, rs.dir])
 	_print_stats(stats)
 	if collect_ghosts:
+		rs.unit_values = _learned_values(learn)
 		_write_ghosts(rs, pool, base_seed)
 	if out_path != "":
 		print("Log: %s" % out_path)
@@ -109,6 +113,41 @@ func _collect_ghost(pool: Dictionary, seen: Dictionary, rng: GameRng, per_day: i
 			pool[d][j] = ghost
 
 
+## Merkt sich je Kampf Tag, Ergebnis und beteiligte Einheiten (jede einmal).
+func _record_battle(learn: Dictionary, b: Dictionary) -> void:
+	var score := 0.5
+	if b["winner"] == 0:
+		score = 1.0
+	elif b["winner"] == 1:
+		score = 0.0
+	var ids := {}
+	for entry: Dictionary in b["team"]:
+		ids[entry["id"]] = true
+	learn["battles"].append([int(b["day"]), score, ids.keys()])
+
+
+## Bereinigte Winrate je Einheit wie in ws_analyze.py: Abstand zum Tagesschnitt plus 50.
+func _learned_values(learn: Dictionary) -> Dictionary:
+	var day_sum := {}
+	var day_n := {}
+	for rec: Array in learn["battles"]:
+		day_sum[rec[0]] = day_sum.get(rec[0], 0.0) + rec[1]
+		day_n[rec[0]] = day_n.get(rec[0], 0) + 1
+	var unit_sum := {}
+	var unit_n := {}
+	for rec: Array in learn["battles"]:
+		var adj: float = rec[1] - day_sum[rec[0]] / day_n[rec[0]]
+		for id: String in rec[2]:
+			unit_sum[id] = unit_sum.get(id, 0.0) + adj
+			unit_n[id] = unit_n.get(id, 0) + 1
+	var values := {}
+	for id: String in unit_sum:
+		# Unter 30 Kämpfen zu unsicher, dann bleibt der Preis allein maßgeblich.
+		if unit_n[id] >= 30:
+			values[id] = snappedf(50.0 + 100.0 * unit_sum[id] / unit_n[id], 0.1)
+	return values
+
+
 func _write_ghosts(rs: WsRuleset, pool: Dictionary, base_seed: int) -> void:
 	var days := pool.keys()
 	days.sort()
@@ -121,7 +160,8 @@ func _write_ghosts(rs: WsRuleset, pool: Dictionary, base_seed: int) -> void:
 	rs.ghosts = teams
 	var path := rs.dir.path_join("ghosts.json")
 	var f := FileAccess.open(path, FileAccess.WRITE)
-	f.store_string('{"generator": "tools/ws_simulate.gd --ghosts", "seed": %d, "teams": [\n%s\n]}\n' % [base_seed, ",\n".join(lines)])
+	f.store_string('{"generator": "tools/ws_simulate.gd --ghosts", "seed": %d, "unit_values": %s, "teams": [\n%s\n]}\n' % [
+		base_seed, JSON.stringify(rs.unit_values), ",\n".join(lines)])
 	f.close()
 	print("%d Geisterteams für %d Tage: %s" % [teams.size(), days.size(), path])
 

@@ -466,6 +466,13 @@ function renderRules() {
       <label class="field"><span>Second Chance</span><input type="checkbox" data-path="run.second_chance" ${r.run.second_chance ? "checked" : ""}></label>
       <label class="field"><span>Unentschieden zählt als</span><select data-path="run.draw_result">${["win", "draw", "loss"].map((v) => `<option value="${v}" ${r.run.draw_result === v ? "selected" : ""}>${{ win: "Sieg (Batomon)", draw: "Unentschieden", loss: "Niederlage" }[v]}</option>`).join("")}</select></label>
     </div></div>
+    <div class="card"><h2>Gegner (Schwierigkeit)</h2>
+      <p class="muted">Gegner sind gespeicherte Teams aus den Bot-Läufen (Geister). Hier stellst du ein, welche davon du triffst. Wirkt nach dem nächsten Test-Build bzw. der nächsten Simulation.</p>
+      <div class="row">
+        <div class="field"><span>Geister von diesen Bots</span><div class="checks">${["random", "greedy", "synergy"].map((b) => `<label><input type="checkbox" data-ghostbot="${b}" ${(r.run.ghost_bots || []).includes(b) ? "checked" : ""}> ${{ random: "Zufall", greedy: "Gier", synergy: "Synergie" }[b]}</label>`).join("")}</div><span>keiner angehakt = alle</span></div>
+        ${numInput("run.ghost_match_pool", "Passend zur Siegzahl: aus den N ähnlichsten (0 = aus)")}
+        ${numInput("run.ghost_day_offset", "Gegner vom Tag + (0 = gleicher Tag)")}
+      </div></div>
     <div class="card"><h2>Brett und Stufen</h2><div class="row">
       ${numInput("board.team_slots", "Teamplätze")}${numInput("board.bench_slots", "Bankplätze")}${numInput("board.max_level", "höchste Stufe")}
       ${listInput("board.merge_counts", "Kopien zum Verschmelzen je Stufe")}${listInput("board.level_scale", "Wertefaktor je Stufe")}
@@ -481,6 +488,10 @@ function renderRules() {
       ${numInput("bots.random_reroll_percent", "Zufallsbot würfelt neu (%)")}${numInput("bots.greedy_reroll_min_gold", "andere Bots würfeln ab Gold")}
     </div></div>`;
   bindInputs(el);
+  el.querySelectorAll("[data-ghostbot]").forEach((cb) => cb.addEventListener("change", () => {
+    r.run.ghost_bots = [...el.querySelectorAll("[data-ghostbot]:checked")].map((x) => x.dataset.ghostbot);
+    markDirty();
+  }));
 }
 
 // --- Simulation ---
