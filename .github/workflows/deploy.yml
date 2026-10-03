@@ -65,6 +65,13 @@ jobs:
             test -f "build/web/$f" || { echo "Fehlt: $f"; exit 1; }
           done
 
+      # Test-Build des Balancing-Workshops unter /workshop/, mit der bereinigten Kopie aus workshop/public/.
+      # Das Hauptspiel bleibt davon unberührt (sein Export lässt tools/ weg, die Daten liegen außerhalb von game/).
+      - name: Workshop-Test-Build
+        run: |
+          GODOT=~/godot/godot workshop/build_play.sh jinto_bg --data workshop/public/jinto_bg --out build/web/workshop
+          test -f build/web/workshop/index.pck
+
       - uses: actions/configure-pages@v5
 
       - uses: actions/upload-pages-artifact@v3
