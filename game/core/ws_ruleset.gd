@@ -215,11 +215,23 @@ func slot_neighbors(slot: int) -> Array[int]:
 	return result
 
 
-## Gegnerauswahl nach run.ghost_*: nur Geister bestimmter Bots, Tag verschoben, passend zur Siegzahl.
+## Gegnerauswahl nach run.ghost_* und der gewählten Schwierigkeit:
 ##   ghost_bots: Liste der Bots, deren Teams als Gegner zählen (leer = alle)
 ##   ghost_day_offset: Gegner vom Tag + Versatz (positiv = stärker)
-##   ghost_match_pool: aus den N Geistern mit der ähnlichsten Siegzahl ziehen (0 = alle des Tages)
-func ghost_pool(day: int, wins: int) -> Array:
+##   difficulties: [{"id", "name", "min", "max"}], Stärkeband (Feld "strength" der Geister, 0 bis 100)
+##   ghost_match_pool: aus den N Geistern mit der ähnlichsten Siegzahl ziehen (0 = alle)
+## Bleiben im Band weniger als MIN_BAND Geister, kommen die mit der nächstliegenden Stärke dazu.
+const MIN_BAND := 5
+
+
+func difficulty(id: String) -> Dictionary:
+	for d: Dictionary in section("run").get("difficulties", []):
+		if d.get("id", "") == id:
+			return d
+	return {}
+
+
+func ghost_pool(day: int, wins: int, difficulty_id: String = "") -> Array:
 	var run_rules := section("run")
 	var pool := ghosts_for_day(maxi(day + int(run_rules.get("ghost_day_offset", 0)), 1))
 	var bots: Array = run_rules.get("ghost_bots", [])
@@ -227,6 +239,20 @@ func ghost_pool(day: int, wins: int) -> Array:
 		var filtered := pool.filter(func(g: Dictionary) -> bool: return bots.has(g.get("bot", "")))
 		if not filtered.is_empty():
 			pool = filtered
+	var band := difficulty(difficulty_id)
+	if not band.is_empty():
+		var lo := float(band.get("min", 0))
+		var hi := float(band.get("max", 100))
+		var inside := pool.filter(func(g: Dictionary) -> bool:
+			var st := float(g.get("strength", 50))
+			return st >= lo and st <= hi)
+		if inside.size() < MIN_BAND and pool.size() > inside.size():
+			var mid := (lo + hi) / 2.0
+			var sorted := pool.duplicate()
+			sorted.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
+				return absf(float(a.get("strength", 50)) - mid) < absf(float(b.get("strength", 50)) - mid))
+			inside = sorted.slice(0, mini(MIN_BAND, sorted.size()))
+		pool = inside
 	var n := int(run_rules.get("ghost_match_pool", 0))
 	if n > 0 and pool.size() > n:
 		pool = pool.duplicate()

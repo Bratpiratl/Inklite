@@ -30,7 +30,7 @@ func sell(run: WsRun, unit: Dictionary, value: int) -> void:
 func battle(run: WsRun, b: Dictionary) -> void:
 	_write({
 		"day": b["day"], "ev": "battle", "seed": b["seed"], "team": b["team"].map(unit_tag),
-		"enemy": b["ghost_id"], "result": b["result"], "attacks": b["attacks"], "ticks": b["ticks"],
+		"enemy": b["ghost_id"], "enemy_strength": b.get("ghost_strength", -1), "result": b["result"], "attacks": b["attacks"], "ticks": b["ticks"],
 		"survivors": b["survivors"], "winner": b["winner"], "wins": run.wins, "lives": run.lives, "gold_left": run.gold,
 	})
 

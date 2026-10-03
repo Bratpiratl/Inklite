@@ -34,6 +34,8 @@ var logger: WsLogger = null
 var last_battle: Dictionary = {}
 ## Ereignisliste des Kampfes in last_battle["events"] mitliefern (für die Anzeige).
 var trace := false
+## Gewählte Schwierigkeit (id aus run.difficulties), leer = alle Gegner.
+var difficulty := ""
 
 var _rng: GameRng
 var _combat: WsCombat
@@ -42,9 +44,10 @@ var _offered_today: Array = []
 var _bought_today: Array = []
 
 
-static func create(ruleset: WsRuleset, seed_value: int, mode_override: String = "") -> WsRun:
+static func create(ruleset: WsRuleset, seed_value: int, mode_override: String = "", difficulty_id: String = "") -> WsRun:
 	var run := WsRun.new()
 	run.rs = ruleset
+	run.difficulty = difficulty_id
 	run._rng = GameRng.new(seed_value)
 	run._combat = WsCombat.new(ruleset, mode_override)
 	run.lives = int(ruleset.section("run").get("start_lives", 10))
@@ -198,7 +201,7 @@ func fight(ghost: Dictionary = {}) -> Dictionary:
 		for r in repeats:
 			_fire_shop(ref["unit"], ref, "end_of_turn", {})
 	if ghost.is_empty():
-		var pool := rs.ghost_pool(day, wins)
+		var pool := rs.ghost_pool(day, wins, difficulty)
 		ghost = _rng.pick(pool) if not pool.is_empty() else {"id": "leer", "team": []}
 	var seed_value := _rng.next_int(2147483647)
 	var mine := battle_team()
@@ -229,6 +232,7 @@ func fight(ghost: Dictionary = {}) -> Dictionary:
 	last_battle = {
 		"day": day, "seed": seed_value, "ghost_id": ghost.get("id", ""), "result": outcome,
 		"attacks": result["attacks"], "ticks": result["ticks"], "winner": result["winner"],
+		"ghost_strength": ghost.get("strength", -1), "difficulty": difficulty,
 		"survivors": result["survivors"], "lost_lives": lost_lives, "team": mine,
 	}
 	if trace:

@@ -4,7 +4,10 @@ extends SceneTree
 ## Bot-Runs, jedes Ereignis als JSON Line:
 ##   godot --headless --path game -s res://tools/ws_simulate.gd -- --ruleset workshop/rulesets/jinto_bg --runs 2000
 ##   Optionen: --seed N, --bot random|greedy|synergy|all, --combat bg|grid, --out Pfad (relativ zum Repo),
-##             --ghosts N (vorher N Durchgänge, die ghosts.json im Regelsatz neu erzeugen)
+##             --ghosts N (vorher N Durchgänge, die ghosts.json im Regelsatz neu erzeugen und bewerten),
+##             --difficulty id (Bots spielen gegen das Stärkeband dieser Schwierigkeit, Standard: alle Gegner)
+## Nur Teamstärke der vorhandenen Geister neu messen (z. B. nach Änderungen an Einheiten):
+##   ... -- --ruleset ... --mode rate
 ## Zufallskämpfe mit Winrate je Einheit (ohne Shop):
 ##   ... -- --ruleset ... --mode fights --runs 5000 [--budget 120] [--level 1]
 ## Am Ende steht eine Zusammenfassung als JSON in <out>.summary.json (für den Editor).
@@ -20,6 +23,14 @@ func _init() -> void:
 		return
 	if args.get("mode", "runs") == "fights":
 		_simulate_fights(rs, args)
+	elif args.get("mode", "runs") == "rate":
+		var by_day := {}
+		for ghost: Dictionary in rs.ghosts:
+			if not by_day.has(ghost["day"]):
+				by_day[ghost["day"]] = []
+			by_day[ghost["day"]].append(ghost)
+		_rate_ghosts(rs, by_day, args.get("combat", ""), int(args.get("seed", 1)))
+		_write_ghosts(rs, by_day, int(args.get("seed", 1)))
 	else:
 		var iterations := int(args.get("ghosts", 0))
 		for it in iterations:
@@ -27,6 +38,7 @@ func _init() -> void:
 			var ghost_args := args.duplicate()
 			ghost_args["seed"] = int(args.get("seed", 1)) * 7919 + it
 			ghost_args.erase("out")
+			ghost_args["rate"] = it == iterations - 1
 			_simulate_runs(rs, ghost_args, true)
 		_simulate_runs(rs, args, false)
 	quit()
@@ -70,7 +82,7 @@ func _simulate_runs(rs: WsRuleset, args: Dictionary, collect_ghosts: bool) -> vo
 		var bot_name: String = bot_names[i % bot_names.size()]
 		var run_seed := (base_seed * 1000003 + i) % 2147483647
 		var bot := WsBots.new(bot_name, rs, GameRng.new(run_seed ^ 0x5bd1e995))
-		var run := WsRun.create(rs, run_seed, combat_mode)
+		var run := WsRun.create(rs, run_seed, combat_mode, str(args.get("difficulty", "")))
 		run.logger = WsLogger.new({"run": "%s-%06d" % [bot_name, i], "bot": bot_name, "focus": bot.focus_color,
 			"ruleset": ruleset_name, "combat": run._combat.mode}, sink)
 		while not run.is_over():
@@ -89,6 +101,8 @@ func _simulate_runs(rs: WsRuleset, args: Dictionary, collect_ghosts: bool) -> vo
 	_print_stats(stats)
 	if collect_ghosts:
 		rs.unit_values = _learned_values(learn)
+		if args.get("rate", false):
+			_rate_ghosts(rs, pool, combat_mode, base_seed)
 		_write_ghosts(rs, pool, base_seed)
 	if out_path != "":
 		print("Log: %s" % out_path)
@@ -111,6 +125,54 @@ func _collect_ghost(pool: Dictionary, seen: Dictionary, rng: GameRng, per_day: i
 		var j := rng.next_int(seen[d])
 		if j < per_day:
 			pool[d][j] = ghost
+
+
+## Teamstärke: Jeder Geist kämpft gegen bis zu RATE_OPPONENTS andere Geister desselben Tages,
+## abwechselnd auf beiden Seiten. strength = Perzentil seiner Siegquote innerhalb des Tages (0 bis 100).
+const RATE_OPPONENTS := 40
+
+
+func _rate_ghosts(rs: WsRuleset, pool: Dictionary, combat_mode: String, base_seed: int) -> void:
+	var sim := WsCombat.new(rs, combat_mode)
+	var rng := GameRng.new(base_seed * 977 + 13)
+	var started := Time.get_ticks_msec()
+	var fights := 0
+	for d: int in pool:
+		var teams: Array = pool[d]
+		var n := teams.size()
+		if n < 2:
+			for ghost: Dictionary in teams:
+				ghost["strength"] = 50
+			continue
+		var scores: Array = []
+		for i in n:
+			var others := range(n)
+			others.erase(i)
+			rng.shuffle(others)
+			var total := 0.0
+			var k := mini(RATE_OPPONENTS, others.size())
+			for j in k:
+				var opp: Dictionary = teams[others[j]]
+				var mine_first := j % 2 == 0
+				var a: Array = teams[i]["team"] if mine_first else opp["team"]
+				var b: Array = opp["team"] if mine_first else teams[i]["team"]
+				var result := sim.simulate(a, b, rng.next_int(2147483647))
+				var my_side := 0 if mine_first else 1
+				total += 0.5 if result["winner"] == WsCombat.DRAW else (1.0 if result["winner"] == my_side else 0.0)
+				fights += 1
+			scores.append(total / k)
+		# Perzentil: Anteil der Teams, die schwächer sind, Gleichstand zur Hälfte.
+		for i in n:
+			var below := 0.0
+			for j in n:
+				if j != i:
+					if scores[j] < scores[i]:
+						below += 1.0
+					elif scores[j] == scores[i]:
+						below += 0.5
+			teams[i]["strength"] = roundi(100.0 * below / (n - 1))
+			teams[i]["rating"] = snappedf(scores[i], 0.001)
+	print("Teamstärke für %d Tage bewertet, %d Kämpfe in %.1f s" % [pool.size(), fights, (Time.get_ticks_msec() - started) / 1000.0])
 
 
 ## Merkt sich je Kampf Tag, Ergebnis und beteiligte Einheiten (jede einmal).

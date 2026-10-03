@@ -171,6 +171,8 @@ class Jobs:
                    "--ghosts", str(params["ghosts"]), "--out", log_rel]
             if params.get("combat"):
                 cmd += ["--combat", params["combat"]]
+            if params.get("difficulty"):
+                cmd += ["--difficulty", params["difficulty"]]
             self._set(step="Simulation (Bots spielen Runs)")
             if self._exec(cmd) != 0:
                 raise RuntimeError("Simulation fehlgeschlagen")
@@ -447,7 +449,8 @@ class Handler(BaseHTTPRequestHandler):
                       "ghosts": max(0, min(int(body.get("ghosts", 2)), 5)),
                       "seed": int(body.get("seed", 1)),
                       "combat": body.get("combat") if body.get("combat") in ("bg", "grid") else "",
-                      "keep_log": bool(body.get("keep_log", False))}
+                      "keep_log": bool(body.get("keep_log", False)),
+                      "difficulty": body.get("difficulty") if NAME_RE.match(str(body.get("difficulty") or "")) else ""}
             run_id = JOBS.start(p[1], params)
             return self._send(200, {"ok": True, "run": run_id})
         return self._error(404, "Unbekannt")

@@ -253,7 +253,7 @@ function openUnit(id, isToken) {
       <button class="close" id="u-close">Schließen</button>
       <h2>${esc(u.id)} · ${esc(u.name)}</h2>
       <div class="muted">${isToken ? "Spielstein" : esc(rarityName(u.rarity)) + " · " + u.cost + " Gold"}</div>
-      ${m ? `<div class="card" style="margin-top:8px"><span class="stat">Winrate <b>${m.winrate ?? "–"}</b></span><span class="stat">± Seltenheit ${m.vs_rarity ?? "–"}</span><span class="stat">früh ${m["winrate_früh"] ?? "–"}</span><span class="stat">mitte ${m.winrate_mitte ?? "–"}</span><span class="stat">spät ${m["winrate_spät"] ?? "–"}</span><br><span class="stat">Pick ${m.pick_rate ?? "–"} %</span><span class="stat">in ${m.presence ?? "–"} % der Kämpfe</span><span class="stat">Stufe 3: ${m.level3_share ?? "–"} %</span></div>` : ""}
+      ${m ? `<div class="card" style="margin-top:8px"><span class="stat">Winrate <b>${m.winrate ?? "–"}</b></span><span class="stat">± Seltenheit ${m.vs_rarity ?? "–"}</span><span class="stat">früh ${m["winrate_früh"] ?? "–"}</span><span class="stat">mitte ${m.winrate_mitte ?? "–"}</span><span class="stat">spät ${m["winrate_spät"] ?? "–"}</span><br><span class="stat">Pick ${m.pick_rate ?? "–"} %</span><span class="stat">in ${m.presence ?? "–"} % der Kämpfe</span><span class="stat">Stufe 3: ${m.level3_share ?? "–"} %</span><span class="stat">Ø Stärke der Geister mit ihr: ${m.ghost_strength ?? "–"}</span></div>` : ""}
       <div class="row">
         <label class="field"><span>Name</span><input data-f="name" value="${esc(u.name)}"></label>
         ${isToken ? "" : `<label class="field"><span>Seltenheit</span><select data-f="rarity">${(RULES().rarities || []).map((r, i) => `<option value="${i}" ${i === u.rarity ? "selected" : ""}>${esc(r)}</option>`).join("")}</select></label>
@@ -472,7 +472,14 @@ function renderRules() {
         <div class="field"><span>Geister von diesen Bots</span><div class="checks">${["random", "greedy", "synergy"].map((b) => `<label><input type="checkbox" data-ghostbot="${b}" ${(r.run.ghost_bots || []).includes(b) ? "checked" : ""}> ${{ random: "Zufall", greedy: "Gier", synergy: "Synergie" }[b]}</label>`).join("")}</div><span>keiner angehakt = alle</span></div>
         ${numInput("run.ghost_match_pool", "Passend zur Siegzahl: aus den N ähnlichsten (0 = aus)")}
         ${numInput("run.ghost_day_offset", "Gegner vom Tag + (0 = gleicher Tag)")}
-      </div></div>
+      </div>
+      <h3>Schwierigkeiten (vor dem Run wählbar)</h3>
+      <p class="muted">Stärkeband der Gegner: Jedes Geisterteam hat eine Teamstärke von 0 bis 100 (Perzentil seiner Siegquote gegen andere Teams desselben Tages). Gemessen beim letzten Geister-Durchgang einer Simulation.</p>
+      <table><thead><tr><th>Id</th><th>Name</th><th class="num">Stärke von</th><th class="num">bis</th><th></th></tr></thead><tbody>
+      ${(r.run.difficulties || []).map((d, i) => `<tr><td><input data-diff="${i}" data-k="id" value="${esc(d.id)}" style="width:90px"></td><td><input data-diff="${i}" data-k="name" value="${esc(d.name)}" style="width:110px"></td>
+        <td class="num"><input type="number" data-diff="${i}" data-k="min" value="${d.min}"></td><td class="num"><input type="number" data-diff="${i}" data-k="max" value="${d.max}"></td>
+        <td><button class="small" data-diff-del="${i}">−</button></td></tr>`).join("")}
+      </tbody></table><button class="small" id="diff-add">+ Schwierigkeit</button></div>
     <div class="card"><h2>Brett und Stufen</h2><div class="row">
       ${numInput("board.team_slots", "Teamplätze")}${numInput("board.bench_slots", "Bankplätze")}${numInput("board.max_level", "höchste Stufe")}
       ${listInput("board.merge_counts", "Kopien zum Verschmelzen je Stufe")}${listInput("board.level_scale", "Wertefaktor je Stufe")}
@@ -488,6 +495,13 @@ function renderRules() {
       ${numInput("bots.random_reroll_percent", "Zufallsbot würfelt neu (%)")}${numInput("bots.greedy_reroll_min_gold", "andere Bots würfeln ab Gold")}
     </div></div>`;
   bindInputs(el);
+  el.querySelectorAll("[data-diff]").forEach((inp) => inp.addEventListener("change", () => {
+    const d = r.run.difficulties[+inp.dataset.diff];
+    d[inp.dataset.k] = inp.type === "number" ? parseInt(inp.value || "0", 10) : inp.value.trim();
+    markDirty();
+  }));
+  el.querySelectorAll("[data-diff-del]").forEach((b) => b.addEventListener("click", () => { r.run.difficulties.splice(+b.dataset.diffDel, 1); markDirty(); renderRules(); }));
+  $("#diff-add").onclick = () => { (r.run.difficulties = r.run.difficulties || []).push({ id: "neu", name: "Neu", min: 0, max: 100 }); markDirty(); renderRules(); };
   el.querySelectorAll("[data-ghostbot]").forEach((cb) => cb.addEventListener("change", () => {
     r.run.ghost_bots = [...el.querySelectorAll("[data-ghostbot]:checked")].map((x) => x.dataset.ghostbot);
     markDirty();
@@ -506,6 +520,7 @@ function renderSim() {
         <label class="field"><span>Runs</span><input type="number" id="sim-runs" value="900" min="30" step="300"></label>
         <label class="field"><span>Geister-Durchgänge</span><input type="number" id="sim-ghosts" value="2" min="0" max="5"></label>
         <label class="field"><span>Kampf</span><select id="sim-combat"><option value="">wie im Regelsatz (${esc(RULES().combat.mode)})</option><option value="bg">BG</option><option value="grid">Raster</option></select></label>
+        <label class="field"><span>Bots spielen gegen</span><select id="sim-diff"><option value="">alle Gegner</option>${(RULES().run.difficulties || []).map((d) => `<option value="${esc(d.id)}">${esc(d.name)}</option>`).join("")}</select></label>
         <label class="field"><span>Seed</span><input type="number" id="sim-seed" value="1"></label>
         <button class="primary" id="sim-go" ${isDirty() ? "disabled title='Erst speichern'" : ""}>Starten</button>
       </div>
@@ -520,8 +535,8 @@ function renderSim() {
       </div>
     </div>
     <div class="card"><h2>Läufe</h2>
-      ${runs.length ? `<div class="scroll"><table><thead><tr><th>Lauf</th><th class="num">Version</th><th>Kampf</th><th class="num">Runs</th><th class="num">Siege gier</th><th class="num">Siege synergie</th><th class="num">Siege zufall</th><th class="num">Unent. %</th><th>A</th><th>B</th><th></th></tr></thead><tbody>
-      ${runs.map((r) => { const g = r.groups || {}; return `<tr><td>${esc(r.run)}</td><td class="num">${esc(r.meta.version ?? "")}</td><td>${esc(r.meta.params?.combat || "Regelsatz")}</td><td class="num">${r.overall?.runs ?? ""}</td>
+      ${runs.length ? `<div class="scroll"><table><thead><tr><th>Lauf</th><th class="num">Version</th><th>Kampf</th><th>Gegner</th><th class="num">Runs</th><th class="num">Siege gier</th><th class="num">Siege synergie</th><th class="num">Siege zufall</th><th class="num">Unent. %</th><th>A</th><th>B</th><th></th></tr></thead><tbody>
+      ${runs.map((r) => { const g = r.groups || {}; return `<tr><td>${esc(r.run)}</td><td class="num">${esc(r.meta.version ?? "")}</td><td>${esc(r.meta.params?.combat || "Regelsatz")}</td><td>${esc(r.meta.params?.difficulty || "alle")}</td><td class="num">${r.overall?.runs ?? ""}</td>
         <td class="num">${g.greedy?.avg_wins ?? ""}</td><td class="num">${g.synergy?.avg_wins ?? ""}</td><td class="num">${g.random?.avg_wins ?? ""}</td><td class="num">${r.overall?.draw_rate ?? ""}</td>
         <td><input type="radio" name="cmp-a" value="${esc(r.run)}" ${S.compare.a === r.run ? "checked" : ""}></td><td><input type="radio" name="cmp-b" value="${esc(r.run)}" ${S.compare.b === r.run ? "checked" : ""}></td>
         <td><a href="runs/${esc(S.name)}/${esc(r.run)}/report.html" target="_blank" rel="noopener">Bericht</a></td></tr>`; }).join("")}
@@ -541,7 +556,7 @@ function renderSim() {
 
 async function startSim() {
   try {
-    await api("simulate/" + S.name, { runs: +$("#sim-runs").value, ghosts: +$("#sim-ghosts").value, combat: $("#sim-combat").value, seed: +$("#sim-seed").value });
+    await api("simulate/" + S.name, { runs: +$("#sim-runs").value, ghosts: +$("#sim-ghosts").value, combat: $("#sim-combat").value, seed: +$("#sim-seed").value, difficulty: $("#sim-diff").value });
     toast("Simulation gestartet");
     pollJob();
   } catch (e) { toast(e.message); }

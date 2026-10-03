@@ -61,7 +61,22 @@ def load_bg_stats() -> dict:
     return {r["id"]: r for r in json.loads(path.read_text())["rows"]}
 
 
-def analyze(df: pd.DataFrame, units: dict) -> dict:
+def load_ghost_strength(ruleset_dir) -> dict:
+    """Durchschnittliche Teamstärke der Geisterteams, in denen eine Einheit steht (zweite Messgröße)."""
+    path = Path(ruleset_dir) / "ghosts.json" if ruleset_dir else None
+    if not path or not path.exists():
+        return {}
+    sums, counts = {}, {}
+    for g in json.loads(path.read_text()).get("teams", []):
+        if "strength" not in g:
+            continue
+        for uid in {e["id"] for e in g.get("team", [])}:
+            sums[uid] = sums.get(uid, 0) + g["strength"]
+            counts[uid] = counts.get(uid, 0) + 1
+    return {u: round(sums[u] / counts[u], 1) for u in sums if counts[u] >= 10}
+
+
+def analyze(df: pd.DataFrame, units: dict, ruleset_dir=None) -> dict:
     battles = df[df["ev"] == "battle"].copy()
     shops = df[df["ev"] == "shop"].copy()
     ends = df[df["ev"] == "run_end"].copy()
@@ -84,6 +99,7 @@ def analyze(df: pd.DataFrame, units: dict) -> dict:
     bought = shops.explode("bought").dropna(subset=["bought"]).groupby("bought").size()
     n_battles = len(battles)
     bg = load_bg_stats()
+    ghost_strength = load_ghost_strength(ruleset_dir)
 
     unit_rows = []
     for uid, d in units.items():
@@ -101,6 +117,7 @@ def analyze(df: pd.DataFrame, units: dict) -> dict:
         for name, lo, hi in PHASES:
             q = p[(p["day"] >= lo) & (p["day"] <= hi)]
             row["winrate_" + name] = round(50.0 + 100.0 * q["adj"].mean(), 1) if len(q) >= 20 else None
+        row["ghost_strength"] = ghost_strength.get(uid)
         ref = d.get("ref", {})
         row["bg_name"] = ref.get("bg_name", "")
         stat = bg.get(ref.get("bg_id", ""))
@@ -226,7 +243,7 @@ def report(summary: dict, source: str, ruleset_name: str, combat: str) -> str:
     parts.append(table(units, [("id", "Id"), ("name", "Name"), ("rarity", "Sel."), ("cost", "Preis"), ("colors", "Farben"),
                                ("winrate", "Winrate"), ("vs_rarity", "± Sel."), ("winrate_früh", "früh"), ("winrate_mitte", "mitte"), ("winrate_spät", "spät"),
                                ("battles", "Kämpfe"), ("pick_rate", "Pick %"), ("level3_share", "Stufe 3 %"),
-                               ("bg_name", "BG-Vorlage"), ("bg_avg_placement", "BG-Platz")]))
+                               ("ghost_strength", "Ø Teamstärke"), ("bg_name", "BG-Vorlage"), ("bg_avg_placement", "BG-Platz")]))
 
     fig, ax = plt.subplots(figsize=(7, 4))
     for r in range(5):
@@ -281,7 +298,7 @@ def main():
     units_data = json.loads((ruleset_dir / "units.json").read_text())
     units = {u["id"]: u for u in units_data["units"]}
     df = load_log(log)
-    summary = analyze(df, units)
+    summary = analyze(df, units, ruleset_dir)
     combat = str(df["combat"].dropna().iloc[0]) if "combat" in df else ""
     summary["combat"] = combat
     summary["ruleset"] = ruleset_dir.name

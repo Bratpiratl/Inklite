@@ -186,3 +186,18 @@ func test_ghost_pool_filters_bots_and_matches_wins() -> void:
 	var ids: Array = rs.ghost_pool(3, 3).map(func(g: Dictionary) -> String: return g["id"])
 	ids.sort()
 	assert_array(ids).is_equal(["g3", "g4"])
+
+
+func test_difficulty_band_picks_matching_strength() -> void:
+	var rs := H.ruleset([H.unit("c1", 1, 1)], [], {"run": {"start_lives": 10, "wins_to_victory": 10, "max_days": 40,
+		"life_loss_by_day": [1], "difficulties": [{"id": "schwer", "name": "Schwer", "min": 67, "max": 100}]}})
+	rs.ghosts = []
+	for i in 10:
+		rs.ghosts.append({"id": "g%d" % i, "day": 1, "wins": 0, "bot": "greedy", "strength": i * 10, "team": []})
+	var ids: Array = rs.ghost_pool(1, 0, "schwer").map(func(g: Dictionary) -> String: return g["id"])
+	# Nur 70, 80, 90 liegen im Band; das sind weniger als 5, also kommen die zwei nächsten dazu.
+	ids.sort()
+	assert_array(ids).is_equal(["g5", "g6", "g7", "g8", "g9"])
+	assert_int(rs.ghost_pool(1, 0, "").size()).is_equal(10)
+	var run := WsRun.create(rs, 1, "", "schwer")
+	assert_str(run.difficulty).is_equal("schwer")
