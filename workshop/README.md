@@ -84,13 +84,16 @@ Ohne öffentliche Adresse per SSH-Tunnel vom eigenen Rechner:
 `workshop/build_play.sh [regelsatz]` baut in etwa 15 Sekunden einen Test-Build nach `workshop/play/<regelsatz>/`
 (Kopie von `game/` mit `tools/ws_play.tscn` als Hauptszene und dem Regelsatz unter `res://ws_data/`).
 Der Editor liefert ihn hinter dem Passwort unter `/inklite-workshop/play/<regelsatz>/` aus, Knopf unter „Simulation“.
-Das öffentliche Spiel enthält die Szene nicht: dessen Export-Preset lässt `tools/` weg.
+Die Texte der Test-Szene stehen bewusst fest im Code statt in `translations.csv`.
 
-Öffentlich zum Testen am Handy: `python3 workshop/export_public.py jinto_bg` legt eine bereinigte Kopie
-(ohne BG- und Batomon-Namen, ohne Originaltexte und Notizen) nach `workshop/public/jinto_bg/`. Nach Commit und Push
-baut die Pages-Action daraus https://bratpiratl.github.io/Inklite/workshop/. Änderungen aus dem Editor
-kommen erst dort an, wenn die Kopie neu erzeugt und gepusht wird. Die Texte der Test-Szene
-stehen bewusst fest im Code statt in `translations.csv`, weil sie nie ausgeliefert wird.
+Öffentlich spielbar an zwei Stellen, beide aus derselben bereinigten Kopie `workshop/public/jinto_bg/`
+(ohne BG- und Batomon-Namen, ohne Originaltexte und Notizen, erzeugt mit `python3 workshop/export_public.py jinto_bg`):
+
+- im Hauptspiel über den Knopf „Workshop“ im Titelmenü (die Pages-Action kopiert die Kopie vor dem Export nach `game/ws_data/`, lokal ist der Ordner ignoriert),
+- als eigener Test-Build unter https://bratpiratl.github.io/Inklite/workshop/.
+
+Änderungen aus dem Editor kommen dort erst an, wenn die Kopie neu erzeugt, committet und gepusht wird.
+Neue Werkzeuge in `game/tools/`, die nicht ins Spiel sollen, gehören in `exclude_filter` von `game/export_presets.cfg`.
 
 ## Bekannte Grenzen
 
