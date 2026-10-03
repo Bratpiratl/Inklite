@@ -14,6 +14,8 @@ const CELL_SCENE := preload("res://ui/unit_cell.tscn")
 ## Nur antippen zum Ansehen, ohne Ziehen (Kampfansicht).
 @export var inspectable := false
 @export var floor_texture: Texture2D
+## Shop: Felder als helle Karten statt Boden (siehe UnitCell.set_card_style).
+@export var card_style := false
 
 var _cells: Array[UnitCell] = []  # Index = Slot aus combat_sim
 
@@ -27,6 +29,8 @@ func _ready() -> void:
 		var slot := _slot_for_visual(visual)
 		cell.slot = slot
 		cell.set_floor(floor_texture)
+		if card_style:
+			cell.set_card_style()
 		cell.set_interactive(interactive or inspectable)
 		cell.draggable = interactive
 		cell.show_hp_bar = not interactive

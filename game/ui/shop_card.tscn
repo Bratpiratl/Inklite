@@ -1,17 +1,32 @@
-[gd_scene load_steps=3 format=3]
+[gd_scene load_steps=5 format=3]
 
 [ext_resource type="Script" path="res://ui/shop_card.gd" id="1_card"]
+[ext_resource type="Script" path="res://ui/select_brackets.gd" id="2_brackets"]
 
 [sub_resource type="StyleBoxFlat" id="frozen"]
-bg_color = Color(0.4, 0.7, 1, 0.22)
+bg_color = Color(0.4, 0.7, 1, 0.3)
 border_width_left = 3
 border_width_top = 3
 border_width_right = 3
 border_width_bottom = 3
-border_color = Color(0.5, 0.8, 1, 1)
+border_color = Color(0.5, 0.85, 1, 1)
+corner_radius_top_left = 3
+corner_radius_top_right = 3
+corner_radius_bottom_right = 3
+corner_radius_bottom_left = 3
+anti_aliasing = false
+
+[sub_resource type="StyleBoxFlat" id="footer"]
+bg_color = Color(1, 1, 1, 1)
+border_width_top = 2
+border_color = Color(0.121569, 0.105882, 0.164706, 1)
+corner_radius_bottom_right = 2
+corner_radius_bottom_left = 2
+anti_aliasing = false
 
 [node name="ShopCard" type="Button"]
-custom_minimum_size = Vector2(62, 92)
+custom_minimum_size = Vector2(62, 98)
+size_flags_horizontal = 3
 focus_mode = 0
 script = ExtResource("1_card")
 
@@ -22,9 +37,9 @@ anchors_preset = 5
 anchor_left = 0.5
 anchor_right = 0.5
 offset_left = -24.0
-offset_top = 4.0
+offset_top = 3.0
 offset_right = 24.0
-offset_bottom = 52.0
+offset_bottom = 51.0
 grow_horizontal = 2
 mouse_filter = 2
 expand_mode = 1
@@ -32,51 +47,79 @@ expand_mode = 1
 [node name="AtkLabel" type="Label" parent="."]
 unique_name_in_owner = true
 layout_mode = 1
-offset_left = 5.0
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -25.0
 offset_top = 50.0
-offset_right = 29.0
-offset_bottom = 68.0
+offset_right = -1.0
+offset_bottom = 65.0
+grow_horizontal = 2
 mouse_filter = 2
-theme_override_colors/font_color = Color(1, 0.831373, 0.380392, 1)
-theme_override_colors/font_outline_color = Color(0.0784314, 0.0588235, 0.117647, 1)
-theme_override_constants/outline_size = 4
-theme_override_font_sizes/font_size = 13
+theme_type_variation = &"PillOrange"
 text = "0"
+horizontal_alignment = 1
+vertical_alignment = 1
 
 [node name="HpLabel" type="Label" parent="."]
 unique_name_in_owner = true
 layout_mode = 1
-anchors_preset = 1
-anchor_left = 1.0
-anchor_right = 1.0
-offset_left = -29.0
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = 1.0
 offset_top = 50.0
-offset_right = -5.0
-offset_bottom = 68.0
-grow_horizontal = 0
+offset_right = 25.0
+offset_bottom = 65.0
+grow_horizontal = 2
 mouse_filter = 2
-theme_override_colors/font_color = Color(1, 0.462745, 0.462745, 1)
-theme_override_colors/font_outline_color = Color(0.0784314, 0.0588235, 0.117647, 1)
-theme_override_constants/outline_size = 4
-theme_override_font_sizes/font_size = 13
+theme_type_variation = &"PillRed"
 text = "0"
-horizontal_alignment = 2
+horizontal_alignment = 1
+vertical_alignment = 1
 
-[node name="CostLabel" type="Label" parent="."]
+[node name="Footer" type="Panel" parent="."]
 unique_name_in_owner = true
 layout_mode = 1
 anchors_preset = 12
 anchor_top = 1.0
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_top = -24.0
-offset_bottom = -4.0
+offset_left = 2.0
+offset_top = -29.0
+offset_right = -2.0
+offset_bottom = -2.0
 grow_horizontal = 2
 grow_vertical = 0
 mouse_filter = 2
-theme_override_colors/font_color = Color(1, 0.831373, 0.380392, 1)
-theme_override_font_sizes/font_size = 12
-text = ""
+theme_override_styles/panel = SubResource("footer")
+
+[node name="NameLabel" type="Label" parent="Footer"]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_top = 3.0
+offset_bottom = 14.0
+grow_horizontal = 2
+theme_type_variation = &"PanelLabel"
+theme_override_font_sizes/font_size = 8
+horizontal_alignment = 1
+clip_text = true
+
+[node name="CostLabel" type="Label" parent="Footer"]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 12
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = -15.0
+offset_bottom = -1.0
+grow_horizontal = 2
+grow_vertical = 0
+theme_type_variation = &"PanelLabel"
+theme_override_font_sizes/font_size = 11
 horizontal_alignment = 1
 
 [node name="FrozenFrame" type="Panel" parent="."]
@@ -98,15 +141,24 @@ layout_mode = 1
 anchors_preset = 1
 anchor_left = 1.0
 anchor_right = 1.0
-offset_left = -30.0
-offset_top = 2.0
+offset_left = -27.0
+offset_top = 3.0
 offset_right = -3.0
-offset_bottom = 18.0
+offset_bottom = 17.0
 grow_horizontal = 0
 mouse_filter = 2
-theme_override_colors/font_color = Color(1, 0.831373, 0.380392, 1)
-theme_override_colors/font_outline_color = Color(0.0784314, 0.0588235, 0.117647, 1)
-theme_override_constants/outline_size = 4
-theme_override_font_sizes/font_size = 12
-horizontal_alignment = 2
+theme_type_variation = &"PillDark"
+horizontal_alignment = 1
+vertical_alignment = 1
 
+[node name="Brackets" type="Control" parent="."]
+unique_name_in_owner = true
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("2_brackets")

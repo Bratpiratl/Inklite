@@ -9,6 +9,8 @@ const CARD_SCENE := preload("res://ui/shop_card.tscn")
 const FLASH_MERGE := Color(2.0, 1.8, 0.7)
 const FLASH_TIME := 0.5
 const ITEM_SIZE := 48
+const MAX_ITEMS_WITH_TEXT := 2  # mehr Trinkets: Trainertext ausblenden, er steht auf der Karte
+const RARITY_COLORS := ["#4f8f2e", "#2f6fd0", "#8a42c6"]
 
 
 enum CardMode { NONE, BUY, SELL, TIP }
@@ -53,16 +55,23 @@ func _ready() -> void:
 	_board.offer_dropped.connect(_buy)
 	_board.set_offer_check(func(index: int, slot: int) -> bool: return _run.can_buy_at(index, slot))
 	_card.closed.connect(_on_card_closed)
-	%MenuButton.pressed.connect(func() -> void: Session.goto(Session.TITLE_SCENE))
-	%HelpButton.pressed.connect(func() -> void: Session.open_help(Session.SHOP_SCENE))
+	_hud.menu_pressed.connect(func() -> void: Session.goto(Session.TITLE_SCENE))
+	_hud.help_pressed.connect(func() -> void: Session.open_help(Session.SHOP_SCENE))
+	%GoldButton.pressed.connect(_on_hud_info.bind("GOLD"))
+	%OddsButton.pressed.connect(_on_hud_info.bind("ODDS"))
+	%TrainerButton.pressed.connect(func() -> void: _show_item(_run.trainer))
 	Audio.play_music("menu")
 	_hint.text = Loc.t("SHOP_HINT")
+	# Der Hinweis füllt nur den Platz, der übrig bleibt. Auf kurzen Bildschirmen entfällt er.
+	%HintSpace.resized.connect(func() -> void: _hint.visible = %HintSpace.size.y >= _hint.get_minimum_size().y)
 	_refresh()
 	_show_pending_tip()
 
 
 func _refresh() -> void:
 	_hud.show_run(_run)
+	%GoldButton.text = str(_run.gold)
+	_show_odds()
 	_board.show_board(_run.board, Session.db)
 	_refresh_items()
 	_trinket_overlay.visible = not _run.pending_trinkets.is_empty()
@@ -87,6 +96,7 @@ func _refresh() -> void:
 			card.show_offer(Session.db.get_def(id), Session.db.level_stats(id, 1))
 			# Angebote bleiben antippbar, auch wenn das Gold fehlt: die Karte erklärt, warum.
 			card.disabled = false
+			card.set_affordable(_run.gold >= _run.price(i))
 			card.set_frozen(_run.is_frozen(i))
 			card.set_merge_progress(_copies_on_board(id), _merge_needed)
 		card.set_selected(_mode == CardMode.BUY and i == _selected_offer)
@@ -107,15 +117,17 @@ func _update_highlight() -> void:
 		return unit != null and unit["id"] == id and unit["level"] == 1)
 
 
-## Trainer und Trinkets als antippbare Symbole oben.
+## Trainer mit Name und Fähigkeit, daneben die Trinkets. Alles antippbar.
 func _refresh_items() -> void:
+	%TrainerButton.visible = _run.trainer != ""
+	if _run.trainer != "":
+		%TrainerButton.icon = Session.item_texture(_run.trainer)
+		%TrainerName.text = Loc.item(_run.trainer)
+		%TrainerAbility.text = AbilityText.describe(Session.item_def(_run.trainer).get("ability"), true)
+	%TrainerAbility.visible = %TrainerAbility.text != "" and _run.trinkets.size() <= MAX_ITEMS_WITH_TEXT
 	for child in _item_bar.get_children():
 		child.queue_free()
-	var ids: Array[String] = []
-	if _run.trainer != "":
-		ids.append(_run.trainer)
-	ids.append_array(_run.trinkets)
-	for id in ids:
+	for id in _run.trinkets:
 		var button := Button.new()
 		button.custom_minimum_size = Vector2(ITEM_SIZE, ITEM_SIZE)
 		button.focus_mode = Control.FOCUS_NONE
@@ -123,6 +135,23 @@ func _refresh_items() -> void:
 		button.expand_icon = true
 		button.pressed.connect(_show_item.bind(id))
 		_item_bar.add_child(button)
+
+
+## Chancen je Seltenheit in dieser Runde, wie sie der Shop würfelt (nur Anzeige).
+func _show_odds() -> void:
+	var rules: Dictionary = Session.balance["run"]
+	var weights: Variant = Shop.by_round(rules.get("rarity_weights_by_round", []), _run.round_number)
+	if not (weights is Array) or weights.is_empty():
+		%OddsButton.visible = false
+		return
+	var total := 0
+	for w: Variant in weights:
+		total += int(w)
+	var parts: Array[String] = [Loc.t("SHOP_RANK", {"n": mini(_run.round_number, rules["rarity_weights_by_round"].size())})]
+	for rarity in weights.size():
+		var percent := roundi(100.0 * int(weights[rarity]) / maxi(total, 1))
+		parts.append("[color=%s]%d%%[/color]" % [RARITY_COLORS[mini(rarity, RARITY_COLORS.size() - 1)], percent])
+	%OddsLabel.text = "  ".join(parts)
 
 
 # --- Info-Karte ---

@@ -100,6 +100,7 @@ custom_minimum_size = Vector2(0, 48)
 layout_mode = 2
 size_flags_horizontal = 8
 focus_mode = 0
+theme_type_variation = &"BlueButton"
 text = ""
 
 [node name="CardAction" type="Button" parent="Box/Footer"]

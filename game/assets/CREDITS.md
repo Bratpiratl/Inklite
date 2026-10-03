@@ -12,7 +12,8 @@ Nur Assets aus dieser Liste dürfen im Spiel verwendet werden.
 | assets/sprites/trainers/*.png | Kopien aus Tiny Dungeon (Tabelle unten) | CC0 |
 | assets/sprites/trinkets/*.png | Kopien aus Tiny Dungeon (Tabelle unten) | CC0 |
 | icon.png, assets/logo.png, assets/splash.png, assets/pwa/*.png | eigenes Pixel-Logo (Tintentropfen mit Augen), Schriftzug in Kenney Mini | CC0 |
-| assets/ui/button*.png, assets/ui/panel.png | Kenney Pixel UI Pack, https://kenney.nl/assets/pixel-ui-pack (9-Slice/Ancient: grey, grey_pressed, tan, tan_pressed, brown_inlay) | CC0 |
+| assets/ui/bato/*.png | eigene Pixel-Art (Knöpfe, Panels, Felder, Symbole Herz, Pokal, Münze, Zahnrad), erzeugt mit scripts/make_ui_art.py | CC0 |
+| assets/ui/button*.png, assets/ui/panel.png | Kenney Pixel UI Pack, https://kenney.nl/assets/pixel-ui-pack (9-Slice/Ancient: grey, grey_pressed, tan, tan_pressed, brown_inlay), nur noch im Kampf (ui/theme_arena.tres) | CC0 |
 | assets/ui/panel_danger.png | Kenney Pixel UI Pack (9-Slice/Colored/red) | CC0 |
 | assets/fonts/kenney_mini.ttf | Kenney Fonts, https://kenney.nl/assets/kenney-fonts, Kenney Mini; kleine ä ö ü mit scripts/patch_font_umlauts.py nachgebaut | CC0 |
 | assets/audio/sfx/click, buy, sell, merge, reroll, error, poison | Kenney Interface Sounds, https://kenney.nl/assets/interface-sounds (click_002, confirmation_002, drop_003, maximize_006, switch_003, error_004, glass_002) | CC0 |

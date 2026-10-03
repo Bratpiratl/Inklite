@@ -1,4 +1,4 @@
-[gd_scene load_steps=9 format=3]
+[gd_scene load_steps=10 format=3]
 
 [ext_resource type="PackedScene" path="res://ui/info_card.tscn" id="97_card"]
 [ext_resource type="Script" path="res://ui/battle_fx.gd" id="98_fx"]
@@ -7,6 +7,7 @@
 [ext_resource type="PackedScene" path="res://ui/board.tscn" id="2_board"]
 [ext_resource type="Texture2D" path="res://assets/sprites/tiles/floor_enemy.png" id="3_floor_enemy"]
 [ext_resource type="Texture2D" path="res://assets/sprites/tiles/floor_player.png" id="4_floor_player"]
+[ext_resource type="Theme" path="res://ui/theme_arena.tres" id="5_arena"]
 
 [sub_resource type="LabelSettings" id="caption"]
 font_size = 12
@@ -19,6 +20,7 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+theme = ExtResource("5_arena")
 script = ExtResource("1_view")
 
 [node name="Background" type="ColorRect" parent="."]

@@ -1,80 +1,121 @@
-[gd_scene load_steps=2 format=3]
+[gd_scene load_steps=5 format=3]
 
 [ext_resource type="Script" path="res://ui/hud.gd" id="1_hud"]
+[ext_resource type="Texture2D" path="res://assets/ui/bato/icon_heart.png" id="2_heart"]
+[ext_resource type="Texture2D" path="res://assets/ui/bato/icon_trophy.png" id="3_trophy"]
+[ext_resource type="Texture2D" path="res://assets/ui/bato/icon_gear.png" id="4_gear"]
 
-[node name="Hud" type="HBoxContainer"]
-custom_minimum_size = Vector2(0, 44)
-theme_override_constants/separation = 4
+[node name="Hud" type="MarginContainer"]
+custom_minimum_size = Vector2(0, 50)
+theme_override_constants/margin_left = 6
+theme_override_constants/margin_top = 0
+theme_override_constants/margin_right = 4
+theme_override_constants/margin_bottom = 4
 script = ExtResource("1_hud")
 
-[node name="LivesLabel" type="Button" parent="."]
+[node name="Bar" type="HBoxContainer" parent="."]
+layout_mode = 2
+theme_override_constants/separation = 2
+
+[node name="LivesLabel" type="Button" parent="Bar"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(0, 44)
+custom_minimum_size = Vector2(58, 48)
 layout_mode = 2
 focus_mode = 0
-size_flags_horizontal = 3
-theme_override_colors/font_color = Color(1, 0.462745, 0.462745, 1)
-theme_override_colors/font_outline_color = Color(0.0784314, 0.0588235, 0.117647, 1)
-theme_override_constants/outline_size = 4
-theme_override_colors/font_hover_color = Color(1, 0.462745, 0.462745, 1)
-theme_override_colors/font_pressed_color = Color(1, 0.462745, 0.462745, 1)
-theme_override_colors/font_hover_pressed_color = Color(1, 0.462745, 0.462745, 1)
-theme_override_colors/font_focus_color = Color(1, 0.462745, 0.462745, 1)
-theme_override_font_sizes/font_size = 15
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_hover_color = Color(1, 1, 1, 1)
+theme_override_colors/font_pressed_color = Color(1, 1, 1, 1)
+theme_override_colors/font_hover_pressed_color = Color(1, 1, 1, 1)
+theme_override_colors/font_focus_color = Color(1, 1, 1, 1)
+theme_override_colors/font_outline_color = Color(0.121569, 0.105882, 0.164706, 1)
+theme_override_constants/outline_size = 6
+theme_override_constants/h_separation = 4
+theme_override_constants/icon_max_width = 22
+theme_override_font_sizes/font_size = 18
 flat = true
-text = "HUD_LIVES_T"
+text = "5"
 alignment = 0
+icon = ExtResource("2_heart")
+expand_icon = true
 
-[node name="WinsLabel" type="Button" parent="."]
+[node name="RoundLabel" type="Button" parent="Bar"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(0, 44)
+custom_minimum_size = Vector2(0, 48)
 layout_mode = 2
-focus_mode = 0
 size_flags_horizontal = 3
-theme_override_colors/font_color = Color(0.92549, 0.827451, 0.576471, 1)
-theme_override_colors/font_outline_color = Color(0.0784314, 0.0588235, 0.117647, 1)
-theme_override_constants/outline_size = 4
-theme_override_colors/font_hover_color = Color(0.92549, 0.827451, 0.576471, 1)
-theme_override_colors/font_pressed_color = Color(0.92549, 0.827451, 0.576471, 1)
-theme_override_colors/font_hover_pressed_color = Color(0.92549, 0.827451, 0.576471, 1)
-theme_override_colors/font_focus_color = Color(0.92549, 0.827451, 0.576471, 1)
-theme_override_font_sizes/font_size = 15
-flat = true
-text = "HUD_WINS_T"
-alignment = 1
-
-[node name="GoldLabel" type="Button" parent="."]
-unique_name_in_owner = true
-custom_minimum_size = Vector2(0, 44)
-layout_mode = 2
 focus_mode = 0
-size_flags_horizontal = 3
-theme_override_colors/font_color = Color(1, 0.831373, 0.380392, 1)
-theme_override_colors/font_outline_color = Color(0.0784314, 0.0588235, 0.117647, 1)
-theme_override_constants/outline_size = 4
-theme_override_colors/font_hover_color = Color(1, 0.831373, 0.380392, 1)
-theme_override_colors/font_pressed_color = Color(1, 0.831373, 0.380392, 1)
-theme_override_colors/font_hover_pressed_color = Color(1, 0.831373, 0.380392, 1)
-theme_override_colors/font_focus_color = Color(1, 0.831373, 0.380392, 1)
-theme_override_font_sizes/font_size = 15
-flat = true
-text = "HUD_GOLD_T"
-alignment = 1
-
-[node name="RoundLabel" type="Button" parent="."]
-unique_name_in_owner = true
-custom_minimum_size = Vector2(0, 44)
-layout_mode = 2
-focus_mode = 0
-size_flags_horizontal = 3
-theme_override_colors/font_color = Color(0.678431, 0.647059, 0.768627, 1)
-theme_override_colors/font_outline_color = Color(0.0784314, 0.0588235, 0.117647, 1)
-theme_override_constants/outline_size = 4
-theme_override_colors/font_hover_color = Color(0.678431, 0.647059, 0.768627, 1)
-theme_override_colors/font_pressed_color = Color(0.678431, 0.647059, 0.768627, 1)
-theme_override_colors/font_hover_pressed_color = Color(0.678431, 0.647059, 0.768627, 1)
-theme_override_colors/font_focus_color = Color(0.678431, 0.647059, 0.768627, 1)
-theme_override_font_sizes/font_size = 15
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_hover_color = Color(1, 1, 1, 1)
+theme_override_colors/font_pressed_color = Color(1, 1, 1, 1)
+theme_override_colors/font_hover_pressed_color = Color(1, 1, 1, 1)
+theme_override_colors/font_focus_color = Color(1, 1, 1, 1)
+theme_override_colors/font_outline_color = Color(0.121569, 0.105882, 0.164706, 1)
+theme_override_constants/outline_size = 6
+theme_override_constants/h_separation = 4
+theme_override_constants/icon_max_width = 22
+theme_override_font_sizes/font_size = 22
 flat = true
 text = "HUD_ROUND_T"
-alignment = 2
+alignment = 1
+
+[node name="WinsLabel" type="Button" parent="Bar"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(88, 48)
+layout_mode = 2
+focus_mode = 0
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_hover_color = Color(1, 1, 1, 1)
+theme_override_colors/font_pressed_color = Color(1, 1, 1, 1)
+theme_override_colors/font_hover_pressed_color = Color(1, 1, 1, 1)
+theme_override_colors/font_focus_color = Color(1, 1, 1, 1)
+theme_override_colors/font_outline_color = Color(0.121569, 0.105882, 0.164706, 1)
+theme_override_constants/outline_size = 6
+theme_override_constants/h_separation = 4
+theme_override_constants/icon_max_width = 22
+theme_override_font_sizes/font_size = 18
+flat = true
+text = "0/10"
+alignment = 0
+icon = ExtResource("3_trophy")
+expand_icon = true
+
+[node name="HelpButton" type="Button" parent="Bar"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(40, 48)
+layout_mode = 2
+focus_mode = 0
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_hover_color = Color(1, 1, 1, 1)
+theme_override_colors/font_pressed_color = Color(1, 1, 1, 1)
+theme_override_colors/font_hover_pressed_color = Color(1, 1, 1, 1)
+theme_override_colors/font_focus_color = Color(1, 1, 1, 1)
+theme_override_colors/font_outline_color = Color(0.121569, 0.105882, 0.164706, 1)
+theme_override_constants/outline_size = 6
+theme_override_constants/h_separation = 4
+theme_override_constants/icon_max_width = 22
+theme_override_font_sizes/font_size = 22
+flat = true
+text = "?"
+alignment = 1
+
+[node name="MenuButton" type="Button" parent="Bar"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(44, 48)
+layout_mode = 2
+focus_mode = 0
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_hover_color = Color(1, 1, 1, 1)
+theme_override_colors/font_pressed_color = Color(1, 1, 1, 1)
+theme_override_colors/font_hover_pressed_color = Color(1, 1, 1, 1)
+theme_override_colors/font_focus_color = Color(1, 1, 1, 1)
+theme_override_colors/font_outline_color = Color(0.121569, 0.105882, 0.164706, 1)
+theme_override_constants/outline_size = 6
+theme_override_constants/h_separation = 4
+theme_override_constants/icon_max_width = 22
+theme_override_font_sizes/font_size = 18
+flat = true
+text = ""
+alignment = 1
+icon = ExtResource("4_gear")
+expand_icon = true
+

@@ -1,29 +1,51 @@
 class_name ShopCard
 extends Button
 ## Ein Angebot im Shop. Tippen zeigt die Info-Karte, Ziehen auf ein Feld kauft dorthin.
+## Aussehen: Karte in der Typfarbe, Werte als Plaketten, unten Name und Preis. Fehlt das Gold,
+## wird sie grau und der Preis rot.
 
 const SPRITE_ROOT := "res://assets/sprites/"
-const SELECTED := Color(1.35, 1.3, 1.0)
 const DRAG_KIND := "shop_offer"
+const TYPE_COLORS := {
+	"feuer": Color(0.941176, 0.517647, 0.298039),
+	"wasser": Color(0.309804, 0.619608, 0.909804),
+	"moos": Color(0.454902, 0.756863, 0.25098),
+	"blitz": Color(0.94902, 0.760784, 0.188235),
+}
+const POOR_COLOR := Color(0.662745, 0.654902, 0.721569)
+const EMPTY_COLOR := Color(0.25, 0.23, 0.32, 0.55)
+const OUTLINE := Color(0.121569, 0.105882, 0.164706)
+const POOR_SPRITE := Color(0.55, 0.55, 0.6)
+const PRICE_COLOR := Color(0.227451, 0.211765, 0.282353)
+const PRICE_POOR := Color(0.85, 0.15, 0.25)
 
 var index := -1
 var _has_offer := false
+var _type := ""
 
 
 func show_offer(def: Dictionary, stats: Dictionary) -> void:
 	_has_offer = true
+	_type = def.get("type", "")
 	%Sprite.texture = load(SPRITE_ROOT + def["sprite"])
-	%Sprite.visible = true
 	%AtkLabel.text = str(stats["atk"])
 	%HpLabel.text = str(stats["hp"])
 	%CostLabel.text = Loc.t("COST", {"n": def["cost"]})
-	%AtkLabel.visible = true
-	%HpLabel.visible = true
-	%CostLabel.visible = true
+	%NameLabel.text = Loc.monster(def["id"])
+	for node: CanvasItem in [%Sprite, %AtkLabel, %HpLabel, %Footer]:
+		node.visible = true
+	set_affordable(true)
+
+
+## Grau mit rotem Preis, wenn das Gold nicht reicht. Antippen bleibt möglich, die Karte erklärt es.
+func set_affordable(value: bool) -> void:
+	_apply_color(TYPE_COLORS.get(_type, POOR_COLOR) if value else POOR_COLOR)
+	%Sprite.modulate = Color.WHITE if value else POOR_SPRITE
+	%CostLabel.add_theme_color_override("font_color", PRICE_COLOR if value else PRICE_POOR)
 
 
 func set_selected(selected: bool) -> void:
-	modulate = SELECTED if selected else Color.WHITE
+	%Brackets.visible = selected
 
 
 func set_frozen(value: bool) -> void:
@@ -53,9 +75,25 @@ func _get_drag_data(_at_position: Vector2) -> Variant:
 func show_empty() -> void:
 	_has_offer = false
 	set_frozen(false)
+	set_selected(false)
 	%MergeBadge.visible = false
-	%Sprite.visible = false
-	%AtkLabel.visible = false
-	%HpLabel.visible = false
-	%CostLabel.visible = false
+	for node: CanvasItem in [%Sprite, %AtkLabel, %HpLabel, %Footer]:
+		node.visible = false
+	_apply_color(EMPTY_COLOR, false)
 	disabled = true
+
+
+func _apply_color(color: Color, outlined: bool = true) -> void:
+	var normal := StyleBoxFlat.new()
+	normal.bg_color = color
+	normal.set_corner_radius_all(3)
+	normal.anti_aliasing = false
+	if outlined:
+		normal.border_color = OUTLINE
+		normal.set_border_width_all(2)
+	var pressed := normal.duplicate() as StyleBoxFlat
+	pressed.bg_color = color.darkened(0.15)
+	for state in ["normal", "hover", "focus", "disabled"]:
+		add_theme_stylebox_override(state, normal)
+	for state in ["pressed", "hover_pressed"]:
+		add_theme_stylebox_override(state, pressed)

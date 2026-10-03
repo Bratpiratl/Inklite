@@ -1,6 +1,7 @@
-[gd_scene load_steps=3 format=3]
+[gd_scene load_steps=4 format=3]
 
 [ext_resource type="Script" path="res://ui/settings.gd" id="1_script"]
+[ext_resource type="Script" path="res://ui/backdrop.gd" id="90_backdrop"]
 [ext_resource type="Script" path="res://ui/safe_margin.gd" id="2_safe"]
 
 [node name="Settings" type="Control"]
@@ -21,6 +22,7 @@ grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
 color = Color(0.105882, 0.0901961, 0.14902, 1)
+script = ExtResource("90_backdrop")
 
 [node name="Margin" type="MarginContainer" parent="."]
 layout_mode = 1
@@ -208,7 +210,7 @@ text = "DEBUG_TITLE"
 [node name="DebugStatus" type="Label" parent="Margin/Layout/Scroll/Panels/Debug/Box"]
 unique_name_in_owner = true
 layout_mode = 2
-theme_override_colors/font_color = Color(0.678431, 0.647059, 0.768627, 1)
+theme_override_constants/outline_size = 4
 theme_override_font_sizes/font_size = 12
 text = ""
 autowrap_mode = 3

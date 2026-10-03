@@ -25,6 +25,10 @@ HUD_GOLD_T,Gold,Gold
 HUD_GOLD_INFO,"Jede Runde gibt neues Gold, jede Runde etwas mehr. Übriges Gold verfällt am Rundenende, also ausgeben!","Each round gives fresh gold, a little more every round. Leftover gold is lost at the end of the round, so spend it!"
 HUD_ROUND_T,Runde,Round
 HUD_ROUND_INFO,"Mit jeder Runde werden die Gegner stärker, und der Shop bietet seltenere Monster an.",Every round the enemies get stronger and the shop offers rarer monsters.
+HUD_ODDS_T,Chancen,Odds
+HUD_ODDS_INFO,"So wahrscheinlich ist jede Seltenheit im Shop: grün gewöhnlich, blau selten, lila sehr selten. Mit jeder Runde steigt der Rang, und seltene Monster kommen öfter.","How likely each rarity is in the shop: green common, blue rare, purple very rare. The rank rises every round, and rare monsters show up more often."
+SHOP_RANK,Rang {n},Rank {n}
+SHOP_TEAM,Mein Team,My Team
 SHOP_FRONT,vorne: wird zuerst getroffen,front: gets hit first
 SHOP_CAPTION,Shop,Shop
 SHOP_REROLL,Neu würfeln ({cost}),Reroll ({cost})

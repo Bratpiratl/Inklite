@@ -19,6 +19,12 @@ const HP_LOW := Color(0.95, 0.35, 0.3)
 const DEAD_ALPHA := 0.0
 const DRAG_SOURCE_ALPHA := 0.35
 const EMPTY_FLOOR := Color(0.55, 0.55, 0.6)
+const EMPTY_SLOT := Color(0.86, 0.86, 0.92)
+const HIGHLIGHT_SLOT := Color(1.0, 0.8, 0.3)
+const SLOT_STYLE := preload("res://ui/slot_style.tres")
+const LEVEL_COLOR := Color(0.227451, 0.211765, 0.282353)
+const LEVEL_MAX_COLOR := Color(0.941176, 0.564706, 0.117647)
+const PILL_SIZE := Vector2(24, 15)
 
 @onready var _floor: TextureRect = $Floor
 @onready var _body: Control = $Body
@@ -52,6 +58,54 @@ var offer_check: Callable
 
 var _tweens: Array[Tween] = []
 var _highlight_tween: Tween
+## Kartenstil im Shop: helles Feld mit Rand, Stufe oben links, Werte als Plaketten unten.
+## Die Kampfansicht nutzt weiter den Boden.
+var _card_style := false
+var _ground: CanvasItem
+
+
+func _ready() -> void:
+	_ground = _floor
+
+
+func set_card_style() -> void:
+	_card_style = true
+	var slot_panel := Panel.new()
+	slot_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	slot_panel.add_theme_stylebox_override("panel", SLOT_STYLE)
+	add_child(slot_panel)
+	move_child(slot_panel, 0)
+	slot_panel.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_floor.visible = false
+	_ground = slot_panel
+	_ground.modulate = EMPTY_SLOT
+	_pill(_atk_label, &"PillOrange", -PILL_SIZE.x - 1)
+	_pill(_hp_label, &"PillRed", 1)
+	_level_label.remove_theme_color_override("font_color")
+	_level_label.theme_type_variation = &"PanelLabel"
+	_level_label.add_theme_font_size_override("font_size", 10)
+	_level_label.add_theme_color_override("font_outline_color", Color.WHITE)
+	_level_label.add_theme_constant_override("outline_size", 4)
+	_sprite.position.y += 4
+	_level_label.set_anchors_preset(Control.PRESET_TOP_LEFT)
+	_level_label.position = Vector2(5, 3)
+	_level_label.size = Vector2(40, 12)
+	_level_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+
+
+func _pill(label: Label, variation: StringName, x_from_center: float) -> void:
+	label.remove_theme_color_override("font_color")
+	label.remove_theme_color_override("font_outline_color")
+	label.remove_theme_constant_override("outline_size")
+	label.remove_theme_font_size_override("font_size")
+	label.theme_type_variation = variation
+	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	label.set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
+	label.offset_left = x_from_center
+	label.offset_right = x_from_center + PILL_SIZE.x
+	label.offset_top = -PILL_SIZE.y - 4
+	label.offset_bottom = -4
 
 
 func set_floor(texture: Texture2D) -> void:
@@ -69,7 +123,7 @@ func show_unit(id: String, sprite_path: String, start_hp: int, start_atk: int, u
 	atk = start_atk
 	_stop_tweens()
 	_has_unit = true
-	_floor.modulate = Color.WHITE
+	_ground.modulate = Color.WHITE
 	_body.position = Vector2.ZERO
 	_body.modulate = Color.WHITE
 	_body.scale = Vector2.ONE
@@ -79,7 +133,9 @@ func show_unit(id: String, sprite_path: String, start_hp: int, start_atk: int, u
 	_sprite.flip_h = flip
 	_atk_label.text = str(atk)
 	_level_label.text = Loc.t("LEVEL_SHORT", {"n": level})
-	_level_label.visible = level > 1
+	_level_label.visible = level > 1 or _card_style
+	if _card_style:
+		_level_label.add_theme_color_override("font_color", LEVEL_MAX_COLOR if level >= 3 else LEVEL_COLOR)
 	max_hp = maxi(start_hp, 1)
 	_hp_bar.visible = show_hp_bar
 	set_stats(start_hp, 0, 0)
@@ -89,7 +145,7 @@ func show_unit(id: String, sprite_path: String, start_hp: int, start_atk: int, u
 func clear() -> void:
 	_stop_tweens()
 	_has_unit = false
-	_floor.modulate = EMPTY_FLOOR
+	_ground.modulate = _empty_color()
 	_body.visible = false
 
 
@@ -225,12 +281,16 @@ func set_highlight(value: bool) -> void:
 	if _highlight_tween != null:
 		_highlight_tween.kill()
 		_highlight_tween = null
-	var base := Color.WHITE if _has_unit else EMPTY_FLOOR
-	_floor.modulate = base
+	var base := Color.WHITE if _has_unit else _empty_color()
+	_ground.modulate = base
 	if value:
 		_highlight_tween = create_tween().set_loops()
-		_highlight_tween.tween_property(_floor, "modulate", HIGHLIGHT, 0.35)
-		_highlight_tween.tween_property(_floor, "modulate", base, 0.35)
+		_highlight_tween.tween_property(_ground, "modulate", HIGHLIGHT_SLOT if _card_style else HIGHLIGHT, 0.35)
+		_highlight_tween.tween_property(_ground, "modulate", base, 0.35)
+
+
+func _empty_color() -> Color:
+	return EMPTY_SLOT if _card_style else EMPTY_FLOOR
 
 
 func _notification(what: int) -> void:
