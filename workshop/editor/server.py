@@ -275,6 +275,9 @@ class Handler(BaseHTTPRequestHandler):
         parts = self._route()
         if not parts or parts[0] != "api":
             return self._error(404, "Nicht gefunden")
+        # Nur JSON annehmen: fremde Seiten können das ohne CORS-Vorabfrage nicht senden (Schutz vor CSRF).
+        if not self.headers.get("Content-Type", "").startswith("application/json"):
+            return self._error(415, "Nur application/json")
         try:
             return self._api_post(parts[1:], self._body())
         except (ValueError, RuntimeError) as e:

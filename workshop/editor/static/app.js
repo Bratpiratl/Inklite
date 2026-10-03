@@ -216,7 +216,7 @@ function drawUnitTable() {
   const val = ({ u, m }) => (key in m && !(key in u) ? m[key] : u[key]);
   rows.sort((a, b) => { const x = val(a), y = val(b); return (x === y ? 0 : x === undefined || x === null ? 1 : y === undefined || y === null ? -1 : x > y ? 1 : -1) * S.sort.dir; });
   const cols = [["id", "Id"], ["name", "Name"], ["rarity", "Sel."], ["cost", "Preis", "num"], ["colors", "Farben"], ["atk", "A/L", "num"], ["keywords", "Schlüsselw."], ["eff", "Effekt"],
-    ["winrate", "Winrate", "num"], ["pick_rate", "Pick %", "num"], ["battles", "Kämpfe", "num"], ["bg", "BG-Vorlage", "hide-mobile"]];
+    ["winrate", "Winrate", "num"], ["vs_rarity", "± Sel.", "num"], ["pick_rate", "Pick %", "num"], ["battles", "Kämpfe", "num"], ["bg", "BG-Vorlage", "hide-mobile"]];
   const t = $("#unit-table");
   t.innerHTML = `<thead><tr>${cols.map(([k, l, c]) => `<th data-k="${k}" class="${c || ""}">${l}${S.sort.key === k ? (S.sort.dir > 0 ? " ▲" : " ▼") : ""}</th>`).join("")}</tr></thead><tbody>${rows.map(({ u, m }) => `
     <tr class="clickable ${m.flag ? "flag-" + m.flag : ""} ${u.disabled ? "disabled" : ""}" data-id="${esc(u.id)}">
@@ -224,7 +224,7 @@ function drawUnitTable() {
       <td>${esc(rarityName(u.rarity))}</td><td class="num">${u.cost}</td><td>${(u.colors || []).map(dot).join("")}</td>
       <td class="num">${u.atk}/${u.hp}</td><td>${(u.keywords || []).map((k) => `<span class="chip">${esc(kwName(k))}</span>`).join("")}</td>
       <td class="eff">${esc(unitSummary(u))}</td>
-      <td class="num">${m.winrate ?? ""}</td><td class="num">${m.pick_rate ?? ""}</td><td class="num">${m.battles ?? ""}</td>
+      <td class="num">${m.winrate ?? ""}</td><td class="num">${m.vs_rarity == null ? "" : (m.vs_rarity > 0 ? "+" : "") + m.vs_rarity}</td><td class="num">${m.pick_rate ?? ""}</td><td class="num">${m.battles ?? ""}</td>
       <td class="hide-mobile muted">${esc(u.ref?.bg_name || "")}</td></tr>`).join("")}</tbody>`;
   t.querySelectorAll("th").forEach((th) => th.addEventListener("click", () => {
     const k = th.dataset.k === "atk" ? "atk" : th.dataset.k;
@@ -252,7 +252,7 @@ function openUnit(id, isToken) {
       <button class="close" id="u-close">Schließen</button>
       <h2>${esc(u.id)} · ${esc(u.name)}</h2>
       <div class="muted">${isToken ? "Spielstein" : esc(rarityName(u.rarity)) + " · " + u.cost + " Gold"}</div>
-      ${m ? `<div class="card" style="margin-top:8px"><span class="stat">Winrate <b>${m.winrate ?? "–"}</b></span><span class="stat">früh ${m["winrate_früh"] ?? "–"}</span><span class="stat">mitte ${m.winrate_mitte ?? "–"}</span><span class="stat">spät ${m["winrate_spät"] ?? "–"}</span><br><span class="stat">Pick ${m.pick_rate ?? "–"} %</span><span class="stat">in ${m.presence ?? "–"} % der Kämpfe</span><span class="stat">Stufe 3: ${m.level3_share ?? "–"} %</span></div>` : ""}
+      ${m ? `<div class="card" style="margin-top:8px"><span class="stat">Winrate <b>${m.winrate ?? "–"}</b></span><span class="stat">± Seltenheit ${m.vs_rarity ?? "–"}</span><span class="stat">früh ${m["winrate_früh"] ?? "–"}</span><span class="stat">mitte ${m.winrate_mitte ?? "–"}</span><span class="stat">spät ${m["winrate_spät"] ?? "–"}</span><br><span class="stat">Pick ${m.pick_rate ?? "–"} %</span><span class="stat">in ${m.presence ?? "–"} % der Kämpfe</span><span class="stat">Stufe 3: ${m.level3_share ?? "–"} %</span></div>` : ""}
       <div class="row">
         <label class="field"><span>Name</span><input data-f="name" value="${esc(u.name)}"></label>
         ${isToken ? "" : `<label class="field"><span>Seltenheit</span><select data-f="rarity">${(RULES().rarities || []).map((r, i) => `<option value="${i}" ${i === u.rarity ? "selected" : ""}>${esc(r)}</option>`).join("")}</select></label>
@@ -489,7 +489,7 @@ function renderSim() {
   const runs = S.runs.filter((r) => r.has_report);
   el.innerHTML = `
     <div class="card"><h2>Simulation starten</h2>
-      <p class="muted">Bots spielen komplette Runs gegen Geisterteams. Geister-Durchgänge erzeugen die Gegner vorher neu aus dem aktuellen Stand (nach Änderungen empfohlen: 2). 900 Runs dauern etwa 1 Minute.</p>
+      <p class="muted">Bots spielen komplette Runs gegen Geisterteams. Geister-Durchgänge erzeugen die Gegner vorher neu aus dem aktuellen Stand (nach Änderungen empfohlen: 2). 900 Runs mit 2 Geister-Durchgängen dauern etwa 2 Minuten.</p>
       <div class="row">
         <label class="field"><span>Runs</span><input type="number" id="sim-runs" value="900" min="30" step="300"></label>
         <label class="field"><span>Geister-Durchgänge</span><input type="number" id="sim-ghosts" value="2" min="0" max="5"></label>
@@ -610,7 +610,7 @@ function renderHelp() {
   $("#tab-help").innerHTML = `
     <div class="card"><h2>So übst du Balancing hier</h2><ol>
       <li><b>Lauf als Ausgangslage:</b> Simulation starten (900 Runs, 2 Geister-Durchgänge). Das ist A.</li>
-      <li><b>Problem suchen:</b> In „Einheiten“ nach Winrate sortieren, „nur Warnungen“ filtern. Rot = zu stark, blau = zu schwach (bereinigt je Tag).</li>
+      <li><b>Problem suchen:</b> In „Einheiten“ nach „± Sel.“ sortieren oder „nur Warnungen“ filtern. Rot = stärker als ihre Seltenheit, blau = schwächer.</li>
       <li><b>Hypothese:</b> Warum? Preis zu niedrig, Werte zu hoch, Effekt zu stark, Farbe zu stark?</li>
       <li><b>Eine Sache ändern</b> und mit Notiz und Vorhersage speichern. Nicht mehrere Dinge auf einmal, sonst weißt du nicht, was gewirkt hat.</li>
       <li><b>Neuer Lauf</b> (B), dann unter „Simulation“ A und B vergleichen.</li>
@@ -619,6 +619,7 @@ function renderHelp() {
     <p class="muted">Regler, die du hast: Preis und Seltenheit (Shop-Seite), Werte und Effekte (Einheit), Chancentabelle und Einkommen (Wirtschaft), Kampfregeln (Regeln). Mit „Kopie“ probierst du Varianten aus, ohne den Hauptstand zu verändern.</p></div>
     <div class="card"><h2>Kennzahlen</h2><ul>
       <li><b>Winrate</b>: Siegquote der Kämpfe, in denen die Einheit im Team stand, bereinigt um den Tagesschnitt. 50 = durchschnittlich.</li>
+      <li><b>± Sel.</b>: Abstand zum Schnitt der eigenen Seltenheit. Höhere Seltenheiten dürfen stärker sein, sie kosten mehr. Rot/blau ab 8 Punkten Abstand und 80 Kämpfen.</li>
       <li><b>früh/mitte/spät</b>: Tage 1 bis 3, 4 bis 7, ab 8.</li>
       <li><b>Pick %</b>: wie oft Bots sie kaufen, wenn sie angeboten wird. Bots kaufen nach Preis, Verschmelzen und Farbe, nicht nach Effekt.</li>
       <li><b>BG-Abgleich</b> (im Bericht): Rangkorrelation unserer Winrate mit dem echten BG-Durchschnittsplatz der Vorlage.</li>

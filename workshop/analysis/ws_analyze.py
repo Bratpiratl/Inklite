@@ -25,8 +25,9 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt  # noqa: E402
 import pandas as pd  # noqa: E402
 
-WINRATE_HIGH = 58.0
-WINRATE_LOW = 42.0
+# Warnung, wenn eine Einheit so weit vom Schnitt ihrer Seltenheit abweicht. Höhere Seltenheit darf
+# stärker sein, sie kostet mehr; verglichen wird deshalb innerhalb der Seltenheit.
+RARITY_GAP = 8.0
 MIN_SAMPLES = 80
 PHASES = [("früh", 1, 3), ("mitte", 4, 7), ("spät", 8, 99)]
 RARITY_NAMES = ["Common", "Uncommon", "Rare", "Super Rare", "Legendary"]
@@ -104,14 +105,22 @@ def analyze(df: pd.DataFrame, units: dict) -> dict:
         row["bg_name"] = ref.get("bg_name", "")
         stat = bg.get(ref.get("bg_id", ""))
         row["bg_avg_placement"] = stat["avg_placement"] if stat else None
-        flag = ""
-        if row["winrate"] is not None and row["battles"] >= MIN_SAMPLES:
-            if row["winrate"] > WINRATE_HIGH:
-                flag = "stark"
-            elif row["winrate"] < WINRATE_LOW:
-                flag = "schwach"
-        row["flag"] = flag
         unit_rows.append(row)
+
+    # Schnitt je Seltenheit über Einheiten mit genug Kämpfen, dann Abweichung und Warnung.
+    means = {}
+    for r in {u["rarity"] for u in unit_rows}:
+        vals = [u["winrate"] for u in unit_rows if u["rarity"] == r and u["winrate"] is not None and u["battles"] >= MIN_SAMPLES]
+        means[r] = sum(vals) / len(vals) if vals else None
+    for u in unit_rows:
+        m = means.get(u["rarity"])
+        u["vs_rarity"] = round(u["winrate"] - m, 1) if u["winrate"] is not None and m is not None else None
+        u["flag"] = ""
+        if u["vs_rarity"] is not None and u["battles"] >= MIN_SAMPLES:
+            if u["vs_rarity"] > RARITY_GAP:
+                u["flag"] = "stark"
+            elif u["vs_rarity"] < -RARITY_GAP:
+                u["flag"] = "schwach"
     udf = pd.DataFrame(unit_rows)
 
     groups = {}
@@ -212,9 +221,10 @@ def report(summary: dict, source: str, ruleset_name: str, combat: str) -> str:
     parts.append(chart(fig))
 
     parts.append("<h2>Einheiten nach bereinigter Winrate</h2>")
-    parts.append(f"<p>Warnung ab über {WINRATE_HIGH:.0f} % oder unter {WINRATE_LOW:.0f} %, wenn mindestens {MIN_SAMPLES} Kämpfe.</p>")
+    parts.append(f"<p>„± Sel.“ = Abstand zum Schnitt der eigenen Seltenheit. Rot = mehr als {RARITY_GAP:.0f} Punkte darüber, "
+                 f"blau = mehr als {RARITY_GAP:.0f} darunter, jeweils ab {MIN_SAMPLES} Kämpfen.</p>")
     parts.append(table(units, [("id", "Id"), ("name", "Name"), ("rarity", "Sel."), ("cost", "Preis"), ("colors", "Farben"),
-                               ("winrate", "Winrate"), ("winrate_früh", "früh"), ("winrate_mitte", "mitte"), ("winrate_spät", "spät"),
+                               ("winrate", "Winrate"), ("vs_rarity", "± Sel."), ("winrate_früh", "früh"), ("winrate_mitte", "mitte"), ("winrate_spät", "spät"),
                                ("battles", "Kämpfe"), ("pick_rate", "Pick %"), ("level3_share", "Stufe 3 %"),
                                ("bg_name", "BG-Vorlage"), ("bg_avg_placement", "BG-Platz")]))
 
