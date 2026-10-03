@@ -32,6 +32,8 @@ var offers: Array = []  # je {"id", "cost"} oder null
 var locked := false
 var logger: WsLogger = null
 var last_battle: Dictionary = {}
+## Ereignisliste des Kampfes in last_battle["events"] mitliefern (für die Anzeige).
+var trace := false
 
 var _rng: GameRng
 var _combat: WsCombat
@@ -200,6 +202,7 @@ func fight(ghost: Dictionary = {}) -> Dictionary:
 		ghost = _rng.pick(pool) if not pool.is_empty() else {"id": "leer", "team": []}
 	var seed_value := _rng.next_int(2147483647)
 	var mine := battle_team()
+	_combat.trace = trace
 	var result := _combat.simulate(mine, ghost.get("team", []), seed_value)
 	_apply_permanent(result["permanent"][0])
 
@@ -228,6 +231,8 @@ func fight(ghost: Dictionary = {}) -> Dictionary:
 		"attacks": result["attacks"], "ticks": result["ticks"], "winner": result["winner"],
 		"survivors": result["survivors"], "lost_lives": lost_lives, "team": mine,
 	}
+	if trace:
+		last_battle["events"] = result["events"]
 	if logger != null:
 		logger.battle(self, last_battle)
 	day += 1

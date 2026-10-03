@@ -66,7 +66,9 @@ func simulate(team_a: Array, team_b: Array, seed_value: int) -> Dictionary:
 		var units: Array = []
 		for side in 2:
 			for unit: WsUnit in _board(side):
-				units.append(unit.snapshot())
+				var snap := unit.snapshot()
+				snap["pos"] = _position(unit)
+				units.append(snap)
 		_emit({"ev": "start", "seed": seed_value, "mode": mode, "units": units})
 
 	var first := _first_side()
@@ -292,7 +294,7 @@ func _handle_death(unit: WsUnit) -> void:
 		copy.max_hp = 1
 		copy.keywords.erase("reborn")
 		if _place(unit.side, pos, copy):
-			_emit({"ev": "reborn", "uid": copy.uid, "side": copy.side})
+			_emit({"ev": "reborn", "uid": copy.uid, "id": copy.id, "side": copy.side, "pos": _position(copy), "atk": copy.atk, "hp": copy.hp})
 			for ally: WsUnit in _living(unit.side):
 				_fire_listener(ally, "on_reborn", copy, {"trigger_unit": copy})
 
@@ -413,7 +415,7 @@ func _apply(source: WsUnit, ability: Dictionary, target: WsUnit, ctx: Dictionary
 				target.keywords[keyword] = true
 			if ability.get("permanent", false):
 				_record_permanent(target, add_atk, add_hp, keyword)
-			_emit({"ev": "buff", "uid": target.uid, "atk": target.atk, "hp": target.hp})
+			_emit({"ev": "buff", "uid": target.uid, "atk": target.atk, "hp": target.hp, "keywords": target.keywords.keys()})
 		"give_keyword":
 			var keyword: String = ability.get("keyword", "")
 			if keyword == "random":
@@ -422,9 +424,11 @@ func _apply(source: WsUnit, ability: Dictionary, target: WsUnit, ctx: Dictionary
 				target.keywords[keyword] = true
 				if ability.get("permanent", false):
 					_record_permanent(target, 0, 0, keyword)
+				_emit({"ev": "keywords", "uid": target.uid, "keywords": target.keywords.keys()})
 		"remove_keyword":
 			for keyword: String in ability.get("keywords", []):
 				target.keywords.erase(keyword)
+			_emit({"ev": "keywords", "uid": target.uid, "keywords": target.keywords.keys()})
 		"damage":
 			var amount := int(ability.get("value", 0)) + _value_from(source, ability.get("value_from", ""), ctx)
 			_damage(source, target, amount, false)
@@ -483,7 +487,7 @@ func _summon(source: WsUnit, ability: Dictionary, ctx: Dictionary) -> void:
 		var unit := _spawn(id, level, source.side, -1)
 		if unit == null or not _place(source.side, pos + (t if mode == "bg" else 0), unit):
 			return
-		_emit({"ev": "summon", "uid": unit.uid, "id": id, "side": unit.side})
+		_emit({"ev": "summon", "uid": unit.uid, "id": id, "side": unit.side, "pos": _position(unit), "atk": unit.atk, "hp": unit.hp, "level": unit.level})
 		for ally: WsUnit in _living(source.side):
 			_fire_listener(ally, "on_summon", unit, {"trigger_unit": unit})
 

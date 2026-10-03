@@ -38,6 +38,10 @@ NAME_RE = re.compile(r"^[a-z0-9_\-]{1,40}$")
 sys.path.insert(0, str(HERE))
 import validate  # noqa: E402
 
+PLAY = WORKSHOP / "play"
+mimetypes.add_type("application/wasm", ".wasm")
+mimetypes.add_type("application/octet-stream", ".pck")
+
 
 def now_id():
     return datetime.now().strftime("%Y%m%d-%H%M%S")
@@ -113,15 +117,26 @@ class Jobs:
         with self.lock:
             return dict(self.current) if self.current else None
 
-    def start(self, name, params):
+    def start(self, name, params, kind="sim"):
         with self.lock:
             if self.current and self.current["state"] == "läuft":
-                raise RuntimeError("Es läuft schon eine Simulation")
+                raise RuntimeError("Es läuft schon ein Auftrag")
             run_id = now_id()
-            self.current = {"ruleset": name, "run": run_id, "state": "läuft", "step": "Start", "log": [],
+            self.current = {"ruleset": name, "run": run_id, "kind": kind, "state": "läuft", "step": "Start", "log": [],
                             "started": time.time(), "params": params}
-        threading.Thread(target=self._run, args=(name, run_id, params), daemon=True).start()
+        target = self._run if kind == "sim" else self._build_play
+        threading.Thread(target=target, args=(name, run_id, params), daemon=True).start()
         return run_id
+
+    def _build_play(self, name, run_id, params):
+        try:
+            self._set(step="Test-Build wird gebaut")
+            if self._exec(["bash", "workshop/build_play.sh", name]) != 0:
+                raise RuntimeError("Test-Build fehlgeschlagen")
+            self._set(state="fertig", step="Test-Build fertig")
+        except Exception as e:  # noqa: BLE001
+            self._log(f"FEHLER: {e}")
+            self._set(state="fehler", step=str(e))
 
     def _set(self, **kw):
         with self.lock:
@@ -254,6 +269,11 @@ class Handler(BaseHTTPRequestHandler):
                 return self._static("index.html")
             if parts[0] == "static":
                 return self._static("/".join(parts[1:]))
+            if parts[0] == "play" and len(parts) >= 2:
+                ruleset_dir(parts[1])
+                if len(parts) == 2:
+                    return self._redirect(f"{self._prefix()}/play/{parts[1]}/index.html")
+                return self._play_file(parts[1], "/".join(parts[2:]))
             if parts[0] == "runs" and len(parts) == 4 and parts[3] == "report.html":
                 ruleset_dir(parts[1])
                 if not re.match(r"^\d{8}-\d{6}$", parts[2]):
@@ -283,6 +303,39 @@ class Handler(BaseHTTPRequestHandler):
         except (ValueError, RuntimeError) as e:
             self._error(400, str(e))
 
+    def _prefix(self):
+        return "/inklite-workshop" if urlparse(self.path).path.startswith("/inklite-workshop") else ""
+
+    def _redirect(self, location):
+        self.send_response(302)
+        self.send_header("Location", location)
+        self.send_header("Content-Length", "0")
+        self.end_headers()
+
+    def _play_file(self, name, rel):
+        base = (PLAY / name).resolve()
+        f = (base / rel).resolve()
+        if not str(f).startswith(str(base)) or not f.is_file():
+            return self._error(404, "Kein Test-Build. Im Editor unter Simulation erst bauen.")
+        # Große Dateien (wasm, pck) nur neu senden, wenn sie sich geändert haben.
+        mtime = int(f.stat().st_mtime)
+        etag = f'"{mtime}-{f.stat().st_size}"'
+        if self.headers.get("If-None-Match") == etag:
+            self.send_response(304)
+            self.send_header("ETag", etag)
+            self.end_headers()
+            return
+        ctype = mimetypes.guess_type(str(f))[0] or "application/octet-stream"
+        data = f.read_bytes()
+        self.send_response(200)
+        self.send_header("Content-Type", ctype + ("; charset=utf-8" if ctype.startswith("text/") else ""))
+        self.send_header("Content-Length", str(len(data)))
+        self.send_header("Cache-Control", "no-cache")
+        self.send_header("ETag", etag)
+        self.send_header("X-Robots-Tag", "noindex, nofollow")
+        self.end_headers()
+        self.wfile.write(data)
+
     def _static(self, rel):
         f = (STATIC / rel).resolve()
         if not str(f).startswith(str(STATIC.resolve())) or not f.is_file():
@@ -301,7 +354,9 @@ class Handler(BaseHTTPRequestHandler):
         if len(p) == 2 and p[0] == "ruleset":
             d = ruleset_dir(p[1])
             return self._send(200, {"name": p[1], "ruleset": read_json(d / "ruleset.json"), "units": read_json(d / "units.json"),
-                                    "has_ghosts": (d / "ghosts.json").exists(), "schema": validate.SCHEMA})
+                                    "has_ghosts": (d / "ghosts.json").exists(), "schema": validate.SCHEMA,
+                                    "play_built": datetime.fromtimestamp((PLAY / p[1] / "index.pck").stat().st_mtime).isoformat(timespec="seconds")
+                                    if (PLAY / p[1] / "index.pck").exists() else None})
         if len(p) == 2 and p[0] == "changelog":
             ruleset_dir(p[1])
             return self._send(200, {"entries": read_changelog(p[1])})
@@ -382,6 +437,10 @@ class Handler(BaseHTTPRequestHandler):
             return self._api_post(["ruleset", p[1]], {
                 "ruleset": dict(snap["ruleset"], meta=dict(snap["ruleset"].get("meta", {}), version=current_version)),
                 "units": snap["units"], "note": f"Zurück auf den Stand vor {body['id']}", "prediction": ""})
+        if len(p) == 2 and p[0] == "build_play":
+            ruleset_dir(p[1])
+            run_id = JOBS.start(p[1], {}, kind="play")
+            return self._send(200, {"ok": True, "run": run_id})
         if len(p) == 2 and p[0] == "simulate":
             ruleset_dir(p[1])
             params = {"runs": max(30, min(int(body.get("runs", 900)), 20000)),

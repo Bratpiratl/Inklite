@@ -79,6 +79,14 @@ pm2 logs inklite-workshop
 Ohne öffentliche Adresse per SSH-Tunnel vom eigenen Rechner:
 `ssh -N -L 8741:127.0.0.1:8741 root@5.75.161.48`, dann `http://localhost:8741/`.
 
+## Selbst spielen
+
+`workshop/build_play.sh [regelsatz]` baut in etwa 15 Sekunden einen Test-Build nach `workshop/play/<regelsatz>/`
+(Kopie von `game/` mit `tools/ws_play.tscn` als Hauptszene und dem Regelsatz unter `res://ws_data/`).
+Der Editor liefert ihn hinter dem Passwort unter `/inklite-workshop/play/<regelsatz>/` aus, Knopf unter „Simulation“.
+Das öffentliche Spiel enthält die Szene nicht: dessen Export-Preset lässt `tools/` weg. Die Texte der Test-Szene
+stehen bewusst fest im Code statt in `translations.csv`, weil sie nie ausgeliefert wird.
+
 ## Bekannte Grenzen
 
 - Bots kaufen nach Preis, Verschmelzen und Farbe, nicht nach Effekten. Sie sind die Messlatte, keine Spieler.

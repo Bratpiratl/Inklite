@@ -23,4 +23,5 @@ workshop/raw/
 workshop/mapping/
 workshop/rulesets/
 workshop/runs/
+workshop/play/
 workshop/editor/config.local.json

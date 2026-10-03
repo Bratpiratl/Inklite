@@ -51,6 +51,7 @@ async function loadRuleset(name) {
   S.name = name;
   S.schema = d.schema;
   S.data = { ruleset: d.ruleset, units: d.units };
+  S.playBuilt = d.play_built;
   S.saved = JSON.stringify(S.data);
   try { localStorage.setItem("ws-ruleset", name); } catch (e) { /* egal */ }
   $("#ruleset-select").value = name;
@@ -500,6 +501,13 @@ function renderSim() {
       ${isDirty() ? '<p class="muted">Ungespeicherte Änderungen: erst speichern, damit die Simulation den neuen Stand nutzt.</p>' : ""}
       <div id="job-box"></div>
     </div>
+    <div class="card"><h2>Selbst spielen</h2>
+      <p class="muted">Baut einen Test-Build mit dem gespeicherten Stand (etwa 15 Sekunden) und öffnet ihn im Browser, auch auf dem Handy. Die Gegner sind die Geisterteams der letzten Simulation.</p>
+      <div class="row">
+        <button id="play-build" ${isDirty() ? "disabled title='Erst speichern'" : ""}>Test-Build bauen</button>
+        ${S.playBuilt ? `<a class="primary" href="play/${esc(S.name)}/index.html" target="_blank" rel="noopener"><button class="primary">Spielen</button></a><span class="muted">gebaut ${esc(S.playBuilt.replace("T", " "))}</span>` : '<span class="muted">Noch kein Test-Build.</span>'}
+      </div>
+    </div>
     <div class="card"><h2>Läufe</h2>
       ${runs.length ? `<div class="scroll"><table><thead><tr><th>Lauf</th><th class="num">Version</th><th>Kampf</th><th class="num">Runs</th><th class="num">Siege gier</th><th class="num">Siege synergie</th><th class="num">Siege zufall</th><th class="num">Unent. %</th><th>A</th><th>B</th><th></th></tr></thead><tbody>
       ${runs.map((r) => { const g = r.groups || {}; return `<tr><td>${esc(r.run)}</td><td class="num">${esc(r.meta.version ?? "")}</td><td>${esc(r.meta.params?.combat || "Regelsatz")}</td><td class="num">${r.overall?.runs ?? ""}</td>
@@ -510,6 +518,9 @@ function renderSim() {
     </div>
     <div class="card" id="cmp-box"><h2>Vergleich</h2><p class="muted">Zwei Läufe als A und B wählen.</p></div>`;
   $("#sim-go").onclick = startSim;
+  $("#play-build").onclick = async () => {
+    try { await api("build_play/" + S.name, {}); toast("Test-Build wird gebaut"); pollJob(); } catch (e) { toast(e.message); }
+  };
   el.querySelectorAll("input[name=cmp-a],input[name=cmp-b]").forEach((r) => r.addEventListener("change", () => {
     S.compare[r.name === "cmp-a" ? "a" : "b"] = r.value; drawCompare();
   }));
@@ -533,7 +544,11 @@ async function pollJob() {
     S.job = job;
     drawJob();
     if (job && job.state === "läuft") S.poll = setTimeout(pollJob, 2000);
-    else if (wasRunning && job && job.ruleset === S.name) {
+    else if (wasRunning && job && job.ruleset === S.name && job.kind === "play") {
+      S.playBuilt = (await api("ruleset/" + S.name)).play_built;
+      renderSim();
+      toast(job.state === "fertig" ? "Test-Build fertig, jetzt auf Spielen tippen" : "Test-Build fehlgeschlagen");
+    } else if (wasRunning && job && job.ruleset === S.name) {
       await loadRuns();
       if (job.state === "fertig") { S.compare.b = job.run; if (!S.compare.a) S.compare.a = (S.runs.filter((r) => r.has_report)[1] || {}).run || ""; }
       renderUnits(); renderSim();
