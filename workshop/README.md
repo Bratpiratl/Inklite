@@ -72,9 +72,12 @@ Läuft per pm2 als `inklite-workshop` auf `127.0.0.1:8741`, öffentlich hinter n
 Zugang per Basic Auth, Daten in `editor/config.local.json` (wird beim ersten Start erzeugt).
 
 ```
-pm2 restart inklite-workshop      # nach Änderungen am Editor-Code
+workshop/editor/start.sh          # starten oder neu starten, kein root nötig (als root gibt es an brat ab)
 pm2 logs inklite-workshop
 ```
+
+Ohne öffentliche Adresse per SSH-Tunnel vom eigenen Rechner:
+`ssh -N -L 8741:127.0.0.1:8741 root@5.75.161.48`, dann `http://localhost:8741/`.
 
 ## Bekannte Grenzen
 
