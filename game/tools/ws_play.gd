@@ -415,6 +415,7 @@ func _show_start() -> void:
 	box.add_child(info.get_parent())
 	box.add_child(_button("Neuer Run, BG-Kampf", &"PrimaryButton", _new_run.bind("bg"), 56, 20))
 	box.add_child(_button("Neuer Run, Raster-Kampf", &"", _new_run.bind("grid"), 52, 16))
+	box.add_child(_button("Zurück zum Spiel", &"", func() -> void: Session.goto(Session.TITLE_SCENE), 48, 14))
 
 
 func _new_run(combat_mode: String) -> void:

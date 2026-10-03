@@ -98,13 +98,29 @@ focus_mode = 0
 theme_override_font_sizes/font_size = 24
 text = "BTN_NEW_RUN"
 
-[node name="HistoryButton" type="Button" parent="Margin/Layout"]
-unique_name_in_owner = true
-custom_minimum_size = Vector2(240, 52)
+[node name="SmallRow" type="HBoxContainer" parent="Margin/Layout"]
+custom_minimum_size = Vector2(240, 0)
 layout_mode = 2
 size_flags_horizontal = 4
+theme_override_constants/separation = 8
+
+[node name="HistoryButton" type="Button" parent="Margin/Layout/SmallRow"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 52)
+layout_mode = 2
+size_flags_horizontal = 3
 focus_mode = 0
 text = "BTN_HISTORY"
+
+[node name="WorkshopButton" type="Button" parent="Margin/Layout/SmallRow"]
+unique_name_in_owner = true
+visible = false
+custom_minimum_size = Vector2(0, 52)
+layout_mode = 2
+size_flags_horizontal = 3
+focus_mode = 0
+theme_type_variation = &"BlueButton"
+text = "BTN_WORKSHOP"
 
 [node name="HelpButton" type="Button" parent="Margin/Layout"]
 unique_name_in_owner = true

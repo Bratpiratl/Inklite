@@ -58,6 +58,8 @@ jobs:
       - name: Web-Export
         run: |
           mkdir -p build/web
+          # Workshop-Regelsatz ins Hauptspiel, damit er im Titelmenü unter "Workshop" spielbar ist.
+          mkdir -p game/ws_data && cp workshop/public/jinto_bg/*.json game/ws_data/
           ~/godot/godot --headless --path game --import
           ~/godot/godot --headless --path game --export-release "Web" "$GITHUB_WORKSPACE/build/web/index.html"
           ls -la build/web

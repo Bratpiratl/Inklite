@@ -18,6 +18,9 @@ func _ready() -> void:
 	_continue.pressed.connect(_on_continue)
 	_start.pressed.connect(func() -> void: Session.goto(Session.TRAINER_SCENE))
 	%HistoryButton.pressed.connect(func() -> void: Session.goto(Session.HISTORY_SCENE))
+	# Nur, wenn der Workshop-Regelsatz im Build steckt (beim Deploy aus workshop/public/ kopiert).
+	%WorkshopButton.visible = FileAccess.file_exists(Session.WORKSHOP_DATA)
+	%WorkshopButton.pressed.connect(func() -> void: Session.goto(Session.WORKSHOP_SCENE))
 	%SettingsButton.pressed.connect(func() -> void: Session.goto(Session.SETTINGS_SCENE))
 	%HelpButton.pressed.connect(func() -> void: Session.open_help(Session.TITLE_SCENE))
 	%VersionLabel.text = Loc.t("VERSION", {"v": RunLogger.version()})
