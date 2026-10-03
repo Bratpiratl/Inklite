@@ -9,6 +9,7 @@ Nur Assets aus dieser Liste dürfen im Spiel verwendet werden.
 | assets/sprites/creatures/*.png | Kopien aus Tiny Creatures, umbenannt nach Monster-ID (Tabelle unten), schwarzer Hintergrund vom Rand aus transparent gemacht | CC0 |
 | assets/sprites/tiles/floor_player.png | Tiny Dungeon tile_0048 | CC0 |
 | assets/sprites/tiles/floor_enemy.png | Tiny Dungeon tile_0000 | CC0 |
+| assets/sprites/workshop/*.png | Platzhalter für den Workshop-Test: Kopien aus Tiny Creatures, je Einheit nach Farbe ausgewählt (scripts/make_ws_sprites.py, Zuordnung in tools/ws_play_sprites.json), schwarzer Rand transparent | CC0 |
 | assets/sprites/trainers/*.png | Kopien aus Tiny Dungeon (Tabelle unten) | CC0 |
 | assets/sprites/trinkets/*.png | Kopien aus Tiny Dungeon (Tabelle unten) | CC0 |
 | icon.png, assets/logo.png, assets/splash.png, assets/pwa/*.png | eigenes Pixel-Logo (Tintentropfen mit Augen), Schriftzug in Kenney Mini | CC0 |

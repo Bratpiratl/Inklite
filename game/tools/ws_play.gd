@@ -1,13 +1,60 @@
 extends Control
-## Spielbare Test-Szene für den Balancing-Workshop: Shop, Team, Kampf, Run-Ende.
-## Nur im separaten Test-Build (workshop/build_play.sh), nie im veröffentlichten Spiel. Der Regelsatz
-## liegt dort unter res://ws_data/. Texte stehen bewusst fest im Code und nicht in translations.csv,
-## weil die Szene nur ein Werkzeug ist und nie ausgeliefert wird.
+## Spielbare Test-Szene für den Balancing-Workshop im Look des Hauptspiels: Kopfleiste, Team und Bank als
+## weiße Panels, Shop-Karten, Info-Karte, Kampf wie in der Arena. Die Regeln stecken in WsRun und WsCombat,
+## hier wird nur angezeigt und weitergereicht.
+## Nur im separaten Test-Build (workshop/build_play.sh), nie im Hauptspiel. Der Regelsatz liegt dort unter
+## res://ws_data/. Texte stehen bewusst fest im Code und nicht in translations.csv, weil die Szene ein
+## Werkzeug ist. Bilder: tools/ws_play_sprites.json (id -> Pfad unter assets/sprites/), erzeugt mit
+## scripts/make_ws_sprites.py, Platzhalter aus Tiny Creatures.
 
 const DATA_DIR := "res://ws_data"
-const CARD_FONT := 10
+const SPRITE_MAP := "res://tools/ws_play_sprites.json"
+const SPRITE_ROOT := "res://assets/sprites/"
+const FALLBACK_SPRITE := "creatures/ember_pup.png"
+const HUD_SCENE := preload("res://ui/hud.tscn")
+const INFO_CARD_SCENE := preload("res://ui/info_card.tscn")
+const SHOP_CARD_SCENE := preload("res://ui/shop_card.tscn")
+const CELL_SCENE := preload("res://ui/unit_cell.tscn")
+const ARENA_THEME := preload("res://ui/theme_arena.tres")
+const FLOOR_PLAYER := preload("res://assets/sprites/tiles/floor_player.png")
+const FLOOR_ENEMY := preload("res://assets/sprites/tiles/floor_enemy.png")
+const COIN := preload("res://assets/ui/bato/icon_coin.png")
+const DANGER := preload("res://assets/ui/panel_danger.png")
+const ARENA_BG := Color(0.105882, 0.0901961, 0.14902)
+const TITLE_COLOR := Color(1, 0.776471, 0.164706)
+const RARITY_COLORS := ["#6b6b78", "#4f8f2e", "#2f6fd0", "#8a42c6", "#d9861e"]
+const TEAM_CELL := Vector2(76, 70)
+const BENCH_CELL := Vector2(64, 60)
+const LINE_CELL := Vector2(46, 52)
+const GRID_CELL := Vector2(64, 64)
+const LINE_SPRITE := 36.0
+const SPEEDS := [1.0, 2.0, 4.0]
+const T_PAUSE := 0.3
+const T_LUNGE := 0.3
+const T_DIE := 0.35
+const T_POP := 0.25
+const FLASH_MERGE := Color(2.0, 1.8, 0.7)
+const COLOR_DAMAGE := Color(1, 0.36, 0.36)
+const COLOR_SHIELD := Color(0.5, 0.8, 1)
+const COLOR_BUFF := Color(0.56, 1, 0.42)
+const COLOR_ABILITY := Color(1, 0.83, 0.38)
+const COLOR_WIN := Color(0.56, 1, 0.42)
+const COLOR_LOSS := Color(1, 0.46, 0.46)
+const COLOR_ATK := "#ffd461"
+const COLOR_HP := "#ff7676"
+const COLOR_TERM := "#e0dbed"
+
 const KW_SHORT := {"taunt": "Spott", "divine_shield": "Schild", "reborn": "Wieder", "windfury": "Wind",
 	"venomous": "Gift", "cleave": "Spalt", "stealth": "Tarn"}
+const KW_LONG := {
+	"taunt": "Spott: Gegner müssen zuerst diese Einheit angreifen.",
+	"divine_shield": "Schild: Der erste Treffer macht keinen Schaden, nur der Schild geht verloren.",
+	"reborn": "Wiedergeburt: Kehrt nach dem ersten Tod mit 1 Leben zurück.",
+	"windfury": "Windzorn: Greift zweimal hintereinander an.",
+	"venomous": "Gift: Jeder Treffer gegen eine Einheit tötet sie.",
+	"cleave": "Spalten: Trifft auch die Nachbarn des Ziels.",
+	"stealth": "Tarnung: Kann erst angegriffen werden, wenn sie selbst angegriffen hat.",
+}
 const TRIGGER_TEXT := {
 	"start_of_combat": "Kampfbeginn", "on_attack": "Beim Angriff", "after_attack": "Nach dem Angriff",
 	"on_hurt": "Bei Schaden", "on_death": "Todesröcheln", "on_ally_death": "Wenn ein Verbündeter stirbt",
@@ -29,117 +76,250 @@ const PASSIVE_TEXT := {"deathrattle_twice": "Todesröcheln doppelt", "battlecry_
 var rs: WsRuleset
 var run: WsRun
 var mode := "bg"
-var selected := {}
-var _header: Label
-var _body: VBoxContainer
-var _info: Label
-var _speed := 1.0
+
+var _sprites := {}
+var _textures := {}
+var _hud: Hud
+var _card: InfoCard
+var _pages: MarginContainer
+var _backdrop: ColorRect
+var _arena_bg: ColorRect
+var _page: Control
+var _page_token := 0
+var _selected := {}
+
+# Shop
+var _team_cells: Array[UnitCell] = []
+var _bench_cells: Array[UnitCell] = []
+var _shop_cards: Array[ShopCard] = []
+var _gold_button: Button
+var _odds_label: RichTextLabel
+var _reroll: Button
+var _lock: Button
+var _fight: Button
+var _shop_area: Control
+var _sell_zone: DropZone
+var _sell_label: Label
+
+# Kampf
+var _speed_index := 0
 var _skip := false
+var _fx: BattleFx
+var _battle_cells := {}   # uid -> UnitCell
+var _battle_units := {}   # uid -> {"id", "side", "kw"}
+var _lines: Array = [[], []]
+var _line_boxes: Array = []
+var _grid_cells: Array = [[], []]
+var _dead: Array[UnitCell] = []
 
 
 func _ready() -> void:
-	set_anchors_preset(Control.PRESET_FULL_RECT)
-	var bg := ColorRect.new()
-	bg.color = Color("#1d2026")
-	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
-	add_child(bg)
-	var margin := MarginContainer.new()
-	margin.set_anchors_preset(Control.PRESET_FULL_RECT)
-	for side in ["left", "right", "top", "bottom"]:
-		margin.add_theme_constant_override("margin_" + side, 6)
-	add_child(margin)
-	var scroll := ScrollContainer.new()
-	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	margin.add_child(scroll)
-	var root := VBoxContainer.new()
-	root.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	root.add_theme_constant_override("separation", 6)
-	scroll.add_child(root)
-	_header = _label("", 12)
-	root.add_child(_header)
-	_body = VBoxContainer.new()
-	_body.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_body.add_theme_constant_override("separation", 6)
-	root.add_child(_body)
+	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_backdrop = Backdrop.new()
+	_backdrop.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	add_child(_backdrop)
+	_arena_bg = ColorRect.new()
+	_arena_bg.color = ARENA_BG
+	_arena_bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_arena_bg.visible = false
+	_arena_bg.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	add_child(_arena_bg)
 
+	var screen := VBoxContainer.new()
+	screen.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	screen.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	screen.add_theme_constant_override("separation", 0)
+	add_child(screen)
+	_hud = HUD_SCENE.instantiate()
+	screen.add_child(_hud)
+	_hud.info_requested.connect(_on_hud_info)
+	_hud.help_pressed.connect(_show_help)
+	_hud.menu_pressed.connect(_show_start)
+	_pages = _safe_margin([10, 5, 10, 8], false)
+	_pages.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	screen.add_child(_pages)
+
+	var card_layer := _safe_margin([12, 0, 12, 12], true)
+	card_layer.anchor_left = 0.0
+	card_layer.anchor_right = 1.0
+	card_layer.anchor_top = 1.0
+	card_layer.anchor_bottom = 1.0
+	card_layer.grow_vertical = Control.GROW_DIRECTION_BEGIN
+	card_layer.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(card_layer)
+	_card = INFO_CARD_SCENE.instantiate()
+	_card.size_flags_vertical = Control.SIZE_SHRINK_END
+	card_layer.add_child(_card)
+	_card.action_pressed.connect(_on_card_action)
+	_card.closed.connect(_on_card_closed)
+
+	_load_sprites()
 	rs = WsRuleset.load_dir(DATA_DIR)
 	if rs == null:
-		_header.text = "Kein Regelsatz im Build gefunden (res://ws_data)."
+		var page := _new_page()
+		page.add_child(_title_label("Kein Regelsatz im Build gefunden (res://ws_data)."))
 		return
 	_show_start()
 
 
 # --- Bausteine ---
 
-func _label(text: String, size: int = 11) -> Label:
-	var l := Label.new()
-	l.text = text
-	l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	l.add_theme_font_size_override("font_size", size)
-	l.add_theme_color_override("font_color", Color("#e8e6e1"))
-	return l
+func _safe_margin(margins: Array, use_top: bool) -> MarginContainer:
+	var margin := SafeMargin.new()
+	margin.use_top = use_top
+	for i in 4:
+		margin.add_theme_constant_override("margin_" + ["left", "top", "right", "bottom"][i], int(margins[i]))
+	return margin
 
 
-func _button(text: String, cb: Callable, min_w: int = 0) -> Button:
-	var b := Button.new()
-	b.text = text
-	b.custom_minimum_size = Vector2(min_w, 44)
-	b.add_theme_font_size_override("font_size", 11)
-	b.pressed.connect(cb)
-	return b
+## Neue Seite statt der alten. Laufende Kampf-Wiedergaben merken am Zähler, dass sie aufhören sollen.
+func _new_page(arena: bool = false) -> Control:
+	_page_token += 1
+	_card.close()
+	_selected = {}
+	if _page != null:
+		_page.queue_free()
+	_page = Control.new()
+	_page.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_pages.add_child(_page)
+	_arena_bg.visible = arena
+	_backdrop.visible = not arena
+	_hud.visible = not arena
+	if arena:
+		_page.theme = ARENA_THEME
+	return _page
 
 
-func _row() -> HBoxContainer:
-	var h := HBoxContainer.new()
-	h.add_theme_constant_override("separation", 4)
-	return h
+func _fill(node: Control) -> Control:
+	node.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	return node
 
 
-func _clear() -> void:
-	for child in _body.get_children():
-		child.queue_free()
-	selected = {}
+func _vbox(separation: int) -> VBoxContainer:
+	var box := VBoxContainer.new()
+	box.add_theme_constant_override("separation", separation)
+	return box
 
 
-func _color_hex(color_id: String) -> Color:
+func _hbox(separation: int) -> HBoxContainer:
+	var box := HBoxContainer.new()
+	box.add_theme_constant_override("separation", separation)
+	return box
+
+
+func _label(text: String, size: int, variation: StringName = &"", outline: int = 4) -> Label:
+	var label := Label.new()
+	label.text = text
+	label.theme_type_variation = variation
+	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	label.add_theme_font_size_override("font_size", size)
+	if variation == &"":
+		label.add_theme_constant_override("outline_size", outline)
+	return label
+
+
+func _title_label(text: String) -> Label:
+	var label := _label(text, 26, &"", 6)
+	label.add_theme_color_override("font_color", TITLE_COLOR)
+	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	return label
+
+
+func _button(text: String, variation: StringName, callback: Callable, height: int = 52, font: int = 16) -> Button:
+	var button := Button.new()
+	button.text = text
+	button.theme_type_variation = variation
+	button.focus_mode = Control.FOCUS_NONE
+	button.custom_minimum_size = Vector2(0, height)
+	button.add_theme_font_size_override("font_size", font)
+	if callback.is_valid():
+		button.pressed.connect(callback)
+	return button
+
+
+## Weißes Panel mit farbiger Kopfleiste. Liefert den Inhalt (VBox) zurück, das Panel ist dessen Eltern.
+func _panel(title: String, header: StringName) -> VBoxContainer:
+	var panel := PanelContainer.new()
+	panel.theme_type_variation = &"WhitePanel"
+	var box := _vbox(4)
+	panel.add_child(box)
+	if title != "":
+		box.add_child(_label(title, 13, header))
+	return box
+
+
+func _load_sprites() -> void:
+	var file := FileAccess.open(SPRITE_MAP, FileAccess.READ)
+	if file != null:
+		var data: Variant = JSON.parse_string(file.get_as_text())
+		if data is Dictionary:
+			_sprites = data
+
+
+## Bildpfad unter assets/sprites/. Neue Einheiten ohne Eintrag bekommen fest ein Bild aus der Liste.
+func _sprite_path(id: String) -> String:
+	if _sprites.has(id):
+		return _sprites[id]
+	if _sprites.is_empty():
+		return FALLBACK_SPRITE
+	var keys := _sprites.keys()
+	keys.sort()
+	return _sprites[keys[absi(id.hash()) % keys.size()]]
+
+
+func _texture(id: String) -> Texture2D:
+	if not _textures.has(id):
+		_textures[id] = load(SPRITE_ROOT + _sprite_path(id))
+	return _textures[id]
+
+
+func _color_of(color_id: String) -> Color:
 	for c: Dictionary in rs.rules.get("colors", []):
 		if c["id"] == color_id:
 			return Color(c.get("hex", "#888888"))
 	return Color("#888888")
 
 
-## Karte als Knopf: Farbe der Einheit als Hintergrund, Text in kleinen Zeilen.
-func _card(text: String, colors: Array, size: Vector2, cb: Callable, highlight: bool = false, dim: bool = false) -> Button:
-	var b := Button.new()
-	b.text = text
-	b.custom_minimum_size = size
-	b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	b.clip_text = true
-	b.add_theme_font_size_override("font_size", CARD_FONT)
-	var style := StyleBoxFlat.new()
-	var base: Color = _color_hex(colors[0]) if not colors.is_empty() else Color("#3a3f4a")
-	style.bg_color = base.darkened(0.45 if not dim else 0.75)
-	style.set_corner_radius_all(5)
-	style.set_border_width_all(3 if highlight else 1)
-	style.border_color = Color("#ffd34d") if highlight else (_color_hex(colors[1]) if colors.size() > 1 else base)
-	for state in ["normal", "hover", "pressed", "focus", "disabled"]:
-		b.add_theme_stylebox_override(state, style)
-	b.add_theme_color_override("font_color", Color("#ffffff") if not dim else Color("#888888"))
-	b.pressed.connect(cb)
-	return b
+func _color_name(color_id: String) -> String:
+	for c: Dictionary in rs.rules.get("colors", []):
+		if c["id"] == color_id:
+			return str(c.get("name", color_id))
+	return color_id
+
+
+func _unit_color(id: String) -> Color:
+	var colors: Array = rs.get_def(id).get("colors", [])
+	return _color_of(colors[0]) if not colors.is_empty() else Color("#8c8c8c")
 
 
 func _unit_name(id: String) -> String:
 	return str(rs.get_def(id).get("name", id))
 
 
-func _owned_text(unit: Dictionary) -> String:
-	var stats := rs.level_stats(unit["id"], int(unit["level"]))
-	var kws: Array = stats.get("keywords", []) + unit["keywords"]
-	var short := " ".join(kws.map(func(k: String) -> String: return KW_SHORT.get(k, k)))
-	return "%s S%d\n%d/%d\n%s" % [_unit_name(unit["id"]), int(unit["level"]),
-		int(stats["atk"]) + int(unit["atk_bonus"]), int(stats["hp"]) + int(unit["hp_bonus"]), short]
+func _rarity_name(rarity: int) -> String:
+	var names: Array = rs.rules.get("rarities", [])
+	return str(names[rarity]) if rarity >= 0 and rarity < names.size() else ""
 
+
+func _stats(unit: Dictionary) -> Vector2i:
+	var stats := rs.level_stats(unit["id"], int(unit["level"]))
+	return Vector2i(int(stats["atk"]) + int(unit.get("atk_bonus", 0)), int(stats["hp"]) + int(unit.get("hp_bonus", 0)))
+
+
+func _wins_needed() -> int:
+	return int(rs.section("run").get("wins_to_victory", 10))
+
+
+func _merge_needed() -> int:
+	var counts: Array = rs.section("board").get("merge_counts", [3, 2])
+	return int(counts[0]) if not counts.is_empty() else 3
+
+
+func _copies(id: String) -> int:
+	return run.owned_units().filter(func(u: Dictionary) -> bool: return u["id"] == id and int(u["level"]) == 1).size()
+
+
+# --- Texte zu Einheiten ---
 
 func ability_text(a: Dictionary) -> String:
 	var trig: String = TRIGGER_TEXT.get(a.get("trigger", ""), a.get("trigger", ""))
@@ -148,21 +328,21 @@ func ability_text(a: Dictionary) -> String:
 	var tgt: String = TARGET_TEXT.get(a.get("target", "self"), a.get("target", ""))
 	var only := ""
 	if a.get("only") is Dictionary and a["only"].has("color"):
-		only = " (" + str(a["only"]["color"]) + ")"
+		only = " (" + _color_name(str(a["only"]["color"])) + ")"
 	var when := ""
 	if a.get("when") is Dictionary and a["when"].has("color"):
-		when = " [" + str(a["when"]["color"]) + "]"
+		when = " [" + _color_name(str(a["when"]["color"])) + "]"
 	var times := " %d×" % int(a["times"]) if int(a.get("times", 1)) > 1 else ""
 	var what := ""
 	match a.get("effect", ""):
 		"buff":
 			var parts: Array[String] = []
 			if int(a.get("atk", 0)) != 0:
-				parts.append("+%d A" % int(a["atk"]))
+				parts.append("+%d Angriff" % int(a["atk"]))
 			if int(a.get("hp", 0)) != 0:
-				parts.append("+%d L" % int(a["hp"]))
+				parts.append("+%d Leben" % int(a["hp"]))
 			if a.get("value_from", "") != "":
-				parts.append("+A aus " + str(a["value_from"]))
+				parts.append("+Angriff aus " + str(a["value_from"]))
 			if a.get("keyword", "") != "":
 				parts.append(KW_SHORT.get(a["keyword"], a["keyword"]))
 			what = "%s%s: %s%s" % [tgt, only, ", ".join(parts), " (dauerhaft)" if a.get("permanent", false) else ""]
@@ -186,338 +366,757 @@ func ability_text(a: Dictionary) -> String:
 			what = "+%d Gratis-Würfe" % int(a.get("value", 0))
 		_:
 			what = str(a.get("effect", ""))
-	return "%s%s: %s%s" % [trig, when, what, times]
+	return "[color=%s]%s%s:[/color] %s%s" % [COLOR_ATK, trig, when, what, times]
 
 
-func _unit_info(id: String, level: int, unit: Dictionary = {}) -> String:
+## Info-Karte zu einer Einheit. unit leer: Angebot auf Stufe 1, sonst eigene Einheit mit Boni.
+func _show_unit_card(id: String, level: int, unit: Dictionary = {}) -> void:
 	var def := rs.get_def(id)
 	var stats := rs.level_stats(id, level)
-	var atk := int(stats["atk"]) + int(unit.get("atk_bonus", 0))
-	var hp := int(stats["hp"]) + int(unit.get("hp_bonus", 0))
+	var values := _stats({"id": id, "level": level, "atk_bonus": unit.get("atk_bonus", 0), "hp_bonus": unit.get("hp_bonus", 0)})
 	var kws: Array = stats.get("keywords", []) + unit.get("keywords", [])
-	var lines: Array[String] = []
-	var rarities: Array = rs.rules.get("rarities", [])
-	var rarity := int(def.get("rarity", 0))
-	lines.append("%s  %s  %s Gold  Stufe %d" % [def.get("name", id), rarities[rarity] if rarity < rarities.size() else "", def.get("cost", 0), level])
-	lines.append("%d/%d  Farben: %s" % [atk, hp, ", ".join(def.get("colors", []))])
-	if not kws.is_empty():
-		lines.append(", ".join(kws.map(func(k: String) -> String: return KW_SHORT.get(k, k))))
+	var lines: Array[String] = ["[color=%s]%d Angriff[/color]   [color=%s]%d Leben[/color]" % [COLOR_ATK, values.x, COLOR_HP, values.y]]
 	for p: String in stats.get("passives", []):
 		lines.append(PASSIVE_TEXT.get(p, p))
 	for a: Dictionary in stats.get("abilities", []):
 		lines.append(ability_text(a))
-	if not unit.is_empty() and not rs.is_token(id):
-		lines.append("Verkauf: %d Gold" % rs.sell_value(id, level))
+	for k: String in kws:
+		var text: String = KW_LONG.get(k, k)
+		var split := text.find(":")
+		lines.append("[color=%s]%s[/color]%s" % [COLOR_TERM, text.substr(0, split), text.substr(split)] if split > 0 else text)
 	var ref: Variant = def.get("ref")
 	if ref is Dictionary:
 		lines.append("Vorlage: %s (BG Stufe %s)" % [ref.get("bg_name", ""), ref.get("bg_tier", "")])
-	return "\n".join(lines)
+	_card.show_text(_unit_name(id), "\n".join(lines), _texture(id))
+	var colors: Array = def.get("colors", [])
+	var sub := "%s, Stufe %d, %s" % [_rarity_name(int(def.get("rarity", 0))), level, ", ".join(colors.map(_color_name))]
+	if rs.is_token(id):
+		sub = "Spielstein, Stufe %d" % level
+	_card.set_subtitle(sub)
 
 
-# --- Start ---
+# --- Start und Ende ---
 
 func _show_start() -> void:
-	_clear()
+	var page := _new_page()
+	_hud.visible = false
+	Audio.play_music("menu")
+	var box := _fill(_vbox(12)) as VBoxContainer
+	box.alignment = BoxContainer.ALIGNMENT_CENTER
+	page.add_child(box)
+	box.add_child(_title_label("INKLITE WORKSHOP"))
 	var meta: Dictionary = rs.section("meta")
-	_header.text = "Inklite Workshop · Test"
-	_body.add_child(_label("Regelsatz: %s (Version %s)\n%d Einheiten, %d Geisterteams als Gegner." % [
-		meta.get("name", ""), meta.get("version", "?"), rs.units.size(), rs.ghosts.size()]))
+	var info := _panel("Regelsatz", &"HeaderBlue")
+	var text := "%s (Version %s)\n%d Einheiten, %d Geisterteams als Gegner.\n\nKaufen: Angebot antippen oder auf einen Platz ziehen. Umstellen: Einheit auf einen anderen Platz ziehen, auch zwischen Team und Bank. Verkaufen: antippen oder auf die rote Fläche ziehen." % [
+		meta.get("name", ""), meta.get("version", "?"), rs.units.size(), rs.ghosts.size()]
 	if rs.ghosts.is_empty():
-		_body.add_child(_label("Noch keine Geisterteams: im Editor erst eine Simulation laufen lassen, sonst gewinnst du gegen leere Teams."))
-	_body.add_child(_label("Kaufen: Angebot antippen, dann Kaufen oder auf einen freien Teamplatz tippen.\nUmstellen: Einheit antippen, dann Zielplatz antippen.\nTeam = obere 6 Plätze, Bank = untere 4."))
-	_body.add_child(_button("Neuer Run, BG-Kampf", func() -> void: _new_run("bg")))
-	_body.add_child(_button("Neuer Run, Raster-Kampf", func() -> void: _new_run("grid")))
+		text += "\n\nNoch keine Geisterteams: Im Editor erst eine Simulation laufen lassen, sonst kämpfst du gegen leere Teams."
+	info.add_child(_label(text, 12, &"PanelLabel"))
+	box.add_child(info.get_parent())
+	box.add_child(_button("Neuer Run, BG-Kampf", &"PrimaryButton", _new_run.bind("bg"), 56, 20))
+	box.add_child(_button("Neuer Run, Raster-Kampf", &"", _new_run.bind("grid"), 52, 16))
 
 
 func _new_run(combat_mode: String) -> void:
 	mode = combat_mode
 	run = WsRun.create(rs, int(Time.get_unix_time_from_system()) % 2147483647, combat_mode)
 	run.trace = true
+	Audio.play("click")
 	_show_shop()
+
+
+func _show_end() -> void:
+	var page := _new_page()
+	_hud.visible = false
+	Audio.play_music("menu")
+	var box := _fill(_vbox(12)) as VBoxContainer
+	box.alignment = BoxContainer.ALIGNMENT_CENTER
+	page.add_child(box)
+	box.add_child(_title_label("Gewonnen!" if run.is_victory() else "Run vorbei"))
+	var summary := _panel("Ergebnis", &"HeaderPink" if not run.is_victory() else &"HeaderGreen")
+	summary.add_child(_label("%s\n%d Siege, %d Niederlagen, %d Unentschieden in %d Tagen." % [
+		"Zehn Siege, der Run ist gewonnen." if run.is_victory() else "Keine Leben mehr.",
+		run.wins, run.losses, run.draws, run.day - 1], 13, &"PanelLabel"))
+	var team := _hbox(4)
+	team.alignment = BoxContainer.ALIGNMENT_CENTER
+	for unit: Dictionary in run.team_units():
+		var image := TextureRect.new()
+		image.texture = _texture(unit["id"])
+		image.custom_minimum_size = Vector2(44, 44)
+		image.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		team.add_child(image)
+	summary.add_child(team)
+	box.add_child(summary.get_parent())
+	box.add_child(_button("Neuer Run", &"PrimaryButton", _show_start, 56, 20))
 
 
 # --- Shop ---
 
 func _show_shop() -> void:
-	_clear()
+	var page := _new_page()
+	Audio.play_music("menu")
+	_team_cells.clear()
+	_bench_cells.clear()
+	_shop_cards.clear()
+	var layout := _fill(_vbox(5)) as VBoxContainer
+	page.add_child(layout)
+
+	var info_row := _hbox(6)
+	layout.add_child(info_row)
+	var odds := _button("", &"", _on_hud_info.bind("ODDS"), 48)
+	odds.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	info_row.add_child(odds)
+	_odds_label = RichTextLabel.new()
+	_odds_label.bbcode_enabled = true
+	_odds_label.scroll_active = false
+	_odds_label.autowrap_mode = TextServer.AUTOWRAP_OFF
+	_odds_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_odds_label.add_theme_color_override("default_color", Color(0.227451, 0.211765, 0.282353))
+	_odds_label.add_theme_font_size_override("normal_font_size", 10)
+	odds.add_child(_odds_label)
+	_odds_label.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_odds_label.offset_left = 7
+	_odds_label.offset_top = 16
+	_odds_label.offset_right = -4
+	_gold_button = _button("0", &"PrimaryButton", _on_hud_info.bind("GOLD"), 48, 22)
+	_gold_button.custom_minimum_size.x = 96
+	_gold_button.icon = COIN
+	_gold_button.expand_icon = true
+	_gold_button.add_theme_constant_override("icon_max_width", 18)
+	_gold_button.add_theme_constant_override("h_separation", 6)
+	info_row.add_child(_gold_button)
+
+	var team := _panel("MEIN TEAM", &"HeaderPink")
+	layout.add_child(team.get_parent())
+	var caption := _label("Platz 1 bis 6 greifen der Reihe nach an" if mode == "bg" else "obere Reihe: vorne, wird zuerst getroffen", 10, &"PanelLabel")
+	caption.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	team.add_child(caption)
+	var grid := GridContainer.new()
+	grid.columns = 3
+	grid.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	grid.add_theme_constant_override("h_separation", 4)
+	grid.add_theme_constant_override("v_separation", 4)
+	team.add_child(grid)
+	for i in run.team.size():
+		_team_cells.append(_make_cell(grid, WsRun.TEAM, i, TEAM_CELL))
+
+	var bench := _panel("BANK", &"HeaderYellow")
+	layout.add_child(bench.get_parent())
+	var bench_row := _hbox(4)
+	bench_row.alignment = BoxContainer.ALIGNMENT_CENTER
+	bench.add_child(bench_row)
+	for i in run.bench.size():
+		_bench_cells.append(_make_cell(bench_row, WsRun.BENCH, i, BENCH_CELL))
+
+	var spacer := Control.new()
+	spacer.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	spacer.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	layout.add_child(spacer)
+
+	var bottom := MarginContainer.new()
+	layout.add_child(bottom)
+	_shop_area = _vbox(6)
+	bottom.add_child(_shop_area)
+	var shop_panel := PanelContainer.new()
+	shop_panel.theme_type_variation = &"WhitePanel"
+	_shop_area.add_child(shop_panel)
+	var cards := _hbox(3)
+	shop_panel.add_child(cards)
+	for i in run.offers.size():
+		var card: ShopCard = SHOP_CARD_SCENE.instantiate()
+		card.index = i
+		card.custom_minimum_size.x = 58
+		card.add_to_group("silent_button")
+		card.pressed.connect(_tap_offer.bind(i))
+		cards.add_child(card)
+		_shop_cards.append(card)
+
+	var buttons := _hbox(6)
+	_shop_area.add_child(buttons)
+	_reroll = _button("", &"YellowButton", _on_reroll, 54, 15)
+	_lock = _button("", &"BlueButton", _on_lock, 54, 15)
+	_fight = _button("Kampf!", &"PrimaryButton", _on_fight, 54, 20)
+	for b in [_reroll, _lock, _fight]:
+		b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		buttons.add_child(b)
+
+	_sell_zone = DropZone.new()
+	_sell_zone.visible = false
+	var sell_style := StyleBoxTexture.new()
+	sell_style.texture = DANGER
+	sell_style.texture_margin_left = 4
+	sell_style.texture_margin_top = 4
+	sell_style.texture_margin_right = 4
+	sell_style.texture_margin_bottom = 5
+	_sell_zone.add_theme_stylebox_override("panel", sell_style)
+	_sell_zone.dropped.connect(func(data: Dictionary) -> void: _sell(data["loc"], int(data["slot"])))
+	bottom.add_child(_sell_zone)
+	_sell_label = _label("", 17)
+	_sell_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_sell_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	_sell_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_sell_zone.add_child(_sell_label)
 	_refresh_shop()
+
+
+func _make_cell(parent: Control, loc: String, index: int, cell_size: Vector2) -> UnitCell:
+	var cell: UnitCell = CELL_SCENE.instantiate()
+	cell.custom_minimum_size = cell_size
+	parent.add_child(cell)
+	cell.slot = index
+	cell.loc = loc
+	cell.set_card_style()
+	cell.set_interactive(true)
+	cell.draggable = true
+	cell.offer_check = func(offer_index: int, slot: int) -> bool: return _can_buy_at(offer_index, loc, slot)
+	cell.tapped.connect(func(slot: int) -> void: _tap_owned(loc, slot))
+	cell.unit_dropped.connect(func(data: Dictionary, slot: int) -> void: _on_unit_dropped(data, loc, slot))
+	cell.offer_dropped.connect(func(offer_index: int, slot: int) -> void: _buy(offer_index, loc, slot))
+	return cell
 
 
 func _refresh_shop() -> void:
-	for child in _body.get_children():
-		child.queue_free()
-	_header.text = "Tag %d · Rang %d · %d Gold · %d Leben · %d Siege%s" % [
-		run.day, run.rank(), run.gold, run.lives, run.wins, " · %d gratis" % run.free_rerolls if run.free_rerolls > 0 else ""]
-
-	_body.add_child(_label("Shop%s" % (" (gesperrt)" if run.locked else ""), 11))
-	var offers := _row()
-	for i in run.offers.size():
-		var offer: Variant = run.offers[i]
+	_hud.show_values(run.lives, "Tag %d" % run.day, run.wins, _wins_needed())
+	_gold_button.text = str(run.gold)
+	_show_odds()
+	for loc in [WsRun.TEAM, WsRun.BENCH]:
+		var cells: Array[UnitCell] = _team_cells if loc == WsRun.TEAM else _bench_cells
+		var slots := run.slots_of(loc)
+		for i in cells.size():
+			var unit: Variant = slots[i]
+			if unit == null:
+				cells[i].clear()
+			else:
+				var values := _stats(unit)
+				cells[i].show_unit(unit["id"], _sprite_path(unit["id"]), values.y, values.x, int(unit["level"]), false)
+			cells[i].set_highlight(_selected == {"kind": loc, "index": i})
+	for i in _shop_cards.size():
+		var card := _shop_cards[i]
+		var offer: Variant = run.offers[i] if i < run.offers.size() else null
 		if offer == null:
-			offers.add_child(_card("", [], Vector2(60, 78), func() -> void: pass, false, true))
+			card.show_empty()
 			continue
 		var stats := rs.level_stats(offer["id"], 1)
-		var affordable := run.gold >= int(offer["cost"])
-		var text := "%s\n%d Gold\n%d/%d" % [_unit_name(offer["id"]), offer["cost"], stats["atk"], stats["hp"]]
-		var idx := i
-		offers.add_child(_card(text, rs.get_def(offer["id"]).get("colors", []), Vector2(60, 78),
-			func() -> void: _tap("offer", idx), selected == {"kind": "offer", "index": i}, not affordable))
-	_body.add_child(offers)
-
-	var actions := _row()
-	actions.add_child(_button("Würfeln (%d)" % run.reroll_cost(), func() -> void:
-		run.reroll()
-		_refresh_shop(), 0))
-	actions.add_child(_button("Entsperren" if run.locked else "Sperren", func() -> void:
-		run.toggle_lock()
-		_refresh_shop(), 0))
-	actions.add_child(_button("Kaufen", _buy_selected, 0))
-	_body.add_child(actions)
-
-	_body.add_child(_label("Team (%s)" % ("Reihe: Platz 1 bis 6 greifen von links nach rechts an" if mode == "bg" else "obere Reihe = vorne"), 11))
-	var grid := GridContainer.new()
-	grid.columns = 3
-	grid.add_theme_constant_override("h_separation", 4)
-	grid.add_theme_constant_override("v_separation", 4)
-	for j in run.team.size():
-		grid.add_child(_slot_card("team", j))
-	_body.add_child(grid)
-
-	_body.add_child(_label("Bank", 11))
-	var bench := _row()
-	for j in run.bench.size():
-		bench.add_child(_slot_card("bench", j))
-	_body.add_child(bench)
-
-	_info = _label(_selected_info(), 10)
-	_info.custom_minimum_size = Vector2(0, 70)
-	_body.add_child(_info)
-
-	var bottom := _row()
-	var sell := _button("Verkaufen", _sell_selected, 0)
-	sell.disabled = not (selected.get("kind", "") in ["team", "bench"])
-	bottom.add_child(sell)
-	var fight := _button("Kampf!", _fight, 0)
-	fight.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	bottom.add_child(fight)
-	_body.add_child(bottom)
+		card.show_custom(_unit_name(offer["id"]), _texture(offer["id"]), int(stats["atk"]), int(stats["hp"]),
+			int(offer["cost"]), _unit_color(offer["id"]))
+		card.set_affordable(run.gold >= int(offer["cost"]))
+		card.set_frozen(run.locked)
+		card.set_merge_progress(_copies(offer["id"]), _merge_needed())
+		card.set_selected(_selected == {"kind": "offer", "index": i})
+	if run.free_rerolls > 0:
+		_reroll.text = "Gratis (%d)" % run.free_rerolls
+		_reroll.disabled = false
+	else:
+		_reroll.text = "Würfeln (%d)" % run.reroll_cost()
+		_reroll.disabled = run.gold < run.reroll_cost()
+	_lock.text = "Entsperren" if run.locked else "Sperren"
+	_fight.disabled = run.team_units().is_empty()
 
 
-func _slot_card(loc: String, index: int) -> Button:
-	var unit: Variant = run.slots_of(loc)[index]
-	var size := Vector2(100, 64) if loc == "team" else Vector2(72, 56)
-	var is_sel: bool = selected == {"kind": loc, "index": index}
+func _show_odds() -> void:
+	var weights: Array = rs.rarity_weights(run.rank())
+	var total := 0
+	for w: Variant in weights:
+		total += int(w)
+	var parts: Array[String] = ["Rang %d" % run.rank()]
+	for rarity in weights.size():
+		var percent := roundi(100.0 * int(weights[rarity]) / maxi(total, 1))
+		parts.append("[color=%s]%d%%[/color]" % [RARITY_COLORS[mini(rarity, RARITY_COLORS.size() - 1)], percent])
+	_odds_label.text = " ".join(parts)
+
+
+func _can_buy_at(offer_index: int, loc: String, slot: int) -> bool:
+	if not run.can_buy(offer_index):
+		return false
+	var unit: Variant = run.slots_of(loc)[slot]
 	if unit == null:
-		var label := "Platz %d" % (index + 1) if loc == "team" else ""
-		return _card(label, [], size, func() -> void: _tap(loc, index), is_sel, true)
-	return _card(_owned_text(unit), rs.get_def(unit["id"]).get("colors", []), size, func() -> void: _tap(loc, index), is_sel)
+		return true
+	var id: String = run.offers[offer_index]["id"]
+	return unit["id"] == id and int(unit["level"]) == 1 and _copies(id) + 1 >= _merge_needed()
 
 
-func _selected_info() -> String:
-	match selected.get("kind", ""):
-		"offer":
-			var offer: Variant = run.offers[selected["index"]]
-			return _unit_info(offer["id"], 1) if offer != null else ""
-		"team", "bench":
-			var unit: Variant = run.slots_of(selected["kind"])[selected["index"]]
-			return _unit_info(unit["id"], int(unit["level"]), unit) if unit != null else ""
-	return "Tippe eine Einheit an, um ihre Werte zu sehen."
-
-
-func _tap(kind: String, index: int) -> void:
-	var sel_kind: String = selected.get("kind", "")
-	if kind == "offer":
-		selected = {} if selected == {"kind": kind, "index": index} else {"kind": kind, "index": index}
-	elif sel_kind == "offer":
-		var target := index if kind == "team" and run.team[index] == null else -1
-		run.buy(selected["index"], target)
-		selected = {}
-	elif sel_kind in ["team", "bench"]:
-		if selected == {"kind": kind, "index": index}:
-			selected = {}
-		else:
-			run.move(sel_kind, selected["index"], kind, index)
-			selected = {}
-	elif run.slots_of(kind)[index] != null:
-		selected = {"kind": kind, "index": index}
-	_refresh_shop()
-
-
-func _buy_selected() -> void:
-	if selected.get("kind", "") == "offer":
-		run.buy(selected["index"])
-		selected = {}
-	_refresh_shop()
-
-
-func _sell_selected() -> void:
-	if selected.get("kind", "") in ["team", "bench"]:
-		run.sell(selected["kind"], selected["index"])
-		selected = {}
-	_refresh_shop()
-
-
-func _fight() -> void:
-	if run.team_units().is_empty():
-		_info.text = "Stell mindestens eine Einheit ins Team."
+func _tap_offer(index: int) -> void:
+	var offer: Variant = run.offers[index]
+	if offer == null:
 		return
-	var battle := run.fight()
-	_show_battle(battle)
+	_selected = {"kind": "offer", "index": index}
+	_show_unit_card(offer["id"], 1)
+	var cost := int(offer["cost"])
+	_card.set_action("Kaufen (%d Gold)" % cost, run.can_buy(index))
+	if run.gold < cost:
+		_card.set_note("Dafür reicht dein Gold nicht.")
+	elif not run.can_buy(index):
+		_card.set_note("Team und Bank sind voll. Verkaufe erst eine Einheit.")
+	elif _copies(offer["id"]) > 0:
+		_card.set_note("Du hast %d davon auf Stufe 1. Bei %d verschmelzen sie." % [_copies(offer["id"]), _merge_needed()])
+	else:
+		_card.set_note("Tipp: Ziehe die Karte direkt auf einen Platz.")
+	Audio.play("click")
+	_refresh_shop()
+
+
+func _tap_owned(loc: String, slot: int) -> void:
+	var unit: Variant = run.slots_of(loc)[slot]
+	if unit == null:
+		return
+	_selected = {"kind": loc, "index": slot}
+	_show_unit_card(unit["id"], int(unit["level"]), unit)
+	var value := 0 if rs.is_token(unit["id"]) else rs.sell_value(unit["id"], int(unit["level"]))
+	_card.set_action("Verkaufen (+%d)" % value)
+	_card.set_note("Ziehen stellt um, auch zwischen Team und Bank. Nur das Team kämpft.")
+	Audio.play("click")
+	_refresh_shop()
+
+
+func _on_card_action() -> void:
+	match _selected.get("kind", ""):
+		"offer":
+			_buy(int(_selected["index"]))
+		WsRun.TEAM, WsRun.BENCH:
+			_sell(_selected["kind"], int(_selected["index"]))
+		_:
+			_card.close()
+
+
+func _on_card_closed() -> void:
+	_selected = {}
+	if run != null and _shop_cards.size() > 0 and is_instance_valid(_shop_cards[0]):
+		_refresh_shop()
+
+
+## loc/slot: Ziel beim Ziehen. Die Bank als Ziel geht über einen Umweg: kaufen, dann dorthin schieben.
+func _buy(index: int, loc: String = "", slot: int = -1) -> void:
+	if not run.can_buy(index):
+		Audio.play("error")
+		return
+	var before := run.team.duplicate() + run.bench.duplicate()
+	var result := run.buy(index, slot if loc == WsRun.TEAM else -1)
+	if not result.get("ok", false):
+		Audio.play("error")
+		return
+	var merged := int(result.get("merged", 0))
+	if loc == WsRun.BENCH and merged == 0 and run.bench[slot] == null:
+		var after := run.team + run.bench
+		for i in after.size():
+			if before[i] == null and after[i] != null:
+				var from_loc := WsRun.TEAM if i < run.team.size() else WsRun.BENCH
+				run.move(from_loc, i if i < run.team.size() else i - run.team.size(), WsRun.BENCH, slot)
+				break
+	_selected = {}
+	if merged > 0:
+		Audio.play("merge")
+		Haptics.pulse(Haptics.MERGE)
+		_refresh_shop()
+		for loc_name in [WsRun.TEAM, WsRun.BENCH]:
+			var slots := run.slots_of(loc_name)
+			for i in slots.size():
+				if slots[i] != null and slots[i]["id"] == result["id"] and int(slots[i]["level"]) == merged:
+					var cell: UnitCell = (_team_cells if loc_name == WsRun.TEAM else _bench_cells)[i]
+					cell.flash(FLASH_MERGE, 0.5)
+					_show_unit_card(slots[i]["id"], merged, slots[i])
+					_card.set_note("Verschmolzen zu Stufe %d!" % merged)
+		return
+	Audio.play("buy")
+	Haptics.pulse(Haptics.TAP)
+	_card.close()
+	_refresh_shop()
+
+
+func _sell(loc: String, slot: int) -> void:
+	var unit: Variant = run.slots_of(loc)[slot]
+	var result := run.sell(loc, slot)
+	if not result.get("ok", false):
+		return
+	Audio.play("sell")
+	_selected = {}
+	_card.show_text(_unit_name(unit["id"]), "Verkauft für %d Gold." % int(result["value"]), _texture(unit["id"]))
+	_refresh_shop()
+
+
+func _on_unit_dropped(data: Dictionary, to_loc: String, to_slot: int) -> void:
+	if run.move(str(data.get("loc", "")), int(data["slot"]), to_loc, to_slot):
+		Audio.play("click")
+		_selected = {}
+		_card.close()
+		_refresh_shop()
+
+
+func _on_reroll() -> void:
+	if run.reroll():
+		Audio.play("reroll")
+		_card.close()
+		_refresh_shop()
+	else:
+		Audio.play("error")
+
+
+func _on_lock() -> void:
+	run.toggle_lock()
+	Audio.play("click")
+	_card.show_text("Shop gesperrt" if run.locked else "Shop entsperrt",
+		"Die Angebote bleiben bis morgen liegen. Würfeln hebt die Sperre auf." if run.locked else "Morgen gibt es neue Angebote.")
+	_refresh_shop()
+
+
+func _on_fight() -> void:
+	if run.team_units().is_empty():
+		return
+	Audio.play("click")
+	_show_battle(run.fight())
+
+
+func _notification(what: int) -> void:
+	if not is_node_ready() or _sell_zone == null or not is_instance_valid(_sell_zone) or run == null:
+		return
+	if what == NOTIFICATION_DRAG_BEGIN:
+		var data: Variant = get_viewport().gui_get_drag_data()
+		if not (data is Dictionary):
+			return
+		_card.close()
+		if data.get("kind", "") == ShopCard.DRAG_KIND:
+			var index := int(data["index"])
+			for i in _team_cells.size():
+				_team_cells[i].set_highlight(_can_buy_at(index, WsRun.TEAM, i))
+			for i in _bench_cells.size():
+				_bench_cells[i].set_highlight(_can_buy_at(index, WsRun.BENCH, i))
+		elif data.get("kind", "") == UnitCell.DRAG_KIND:
+			var unit: Variant = run.slots_of(str(data.get("loc", "")))[int(data["slot"])]
+			if unit != null:
+				var value := 0 if rs.is_token(unit["id"]) else rs.sell_value(unit["id"], int(unit["level"]))
+				_sell_label.text = "Hierher ziehen: verkaufen (+%d)" % value
+				_sell_zone.visible = true
+				_shop_area.modulate.a = 0.0
+	elif what == NOTIFICATION_DRAG_END:
+		_sell_zone.visible = false
+		_shop_area.modulate.a = 1.0
+		for cell in _team_cells + _bench_cells:
+			cell.set_highlight(false)
+
+
+# --- Infos über die Kopfleiste ---
+
+func _on_hud_info(topic: String) -> void:
+	if run == null:
+		return
+	_selected = {}
+	match topic:
+		"LIVES":
+			var losses: Array = rs.section("run").get("life_loss_by_day", [1])
+			var parts: Array[String] = []
+			for i in losses.size():
+				parts.append(("Tag %d" % (i + 1) if i < losses.size() - 1 else "ab Tag %d" % (i + 1)) + ": " + str(losses[i]))
+			var text := "Eine Niederlage kostet je nach Tag Leben (%s). Bei 0 ist der Run vorbei." % ", ".join(parts)
+			if rs.section("run").get("second_chance", false):
+				text += " Einmal pro Run gibt es eine zweite Chance mit 1 Leben."
+			_card.show_text("Leben", text)
+		"WINS":
+			var draw: String = rs.section("run").get("draw_result", "draw")
+			_card.show_text("Siege", "Mit %d Siegen gewinnst du den Run.%s" % [_wins_needed(),
+				" Ein Unentschieden zählt als Sieg." if draw == "win" else (" Ein Unentschieden zählt als Niederlage." if draw == "loss" else "")])
+		"ROUND":
+			_card.show_text("Tag %d" % run.day, "Jeder Tag ist eine Shop-Phase und ein Kampf. Mit jedem Tag steigt der Shop-Rang, dann kommen seltenere Einheiten. Heute bist du auf Rang %d." % run.rank())
+		"GOLD":
+			var carries: bool = rs.section("economy").get("gold_carries_over", true)
+			_card.show_text("Gold", "Du hast %d Gold. Jeden Tag gibt es neues Gold, Würfeln kostet %d.%s" % [run.gold, run.reroll_cost(),
+				" Übriges Gold bleibt für morgen." if carries else " Übriges Gold verfällt am Tagesende."])
+		"ODDS":
+			var weights: Array = rs.rarity_weights(run.rank())
+			var lines: Array[String] = []
+			for rarity in weights.size():
+				lines.append("[color=%s]%s[/color]: %d" % [RARITY_COLORS[mini(rarity, RARITY_COLORS.size() - 1)], _rarity_name(rarity), int(weights[rarity])])
+			_card.show_text("Chancen auf Rang %d" % run.rank(), "So wahrscheinlich ist jede Seltenheit pro Angebot (Gewichte):\n" + "\n".join(lines))
+	if _shop_cards.size() > 0 and is_instance_valid(_shop_cards[0]):
+		_refresh_shop()
+
+
+func _show_help() -> void:
+	_card.show_text("So geht's", "Kaufen: Angebot antippen oder direkt auf einen Platz im Team oder auf der Bank ziehen. Drei gleiche verschmelzen zur nächsten Stufe.\nUmstellen: Einheit auf einen anderen Platz ziehen. Nur das Team kämpft, die Bank wartet.\nSperren: Die Angebote bleiben bis morgen.\nKampf!: Dein Team kämpft gegen ein gespeichertes Geisterteam.")
 
 
 # --- Kampf ---
 
 func _show_battle(battle: Dictionary) -> void:
-	_clear()
+	var page := _new_page(true)
+	var token := _page_token
+	Audio.play_music("battle")
 	_skip = false
-	_header.text = "Tag %d · Kampf gegen %s" % [battle["day"], battle.get("ghost_id", "")]
-	var enemy_label := _label("Gegner", 11)
-	var enemy_grid := GridContainer.new()
-	var own_label := _label("Dein Team", 11)
-	var own_grid := GridContainer.new()
-	for g in [enemy_grid, own_grid]:
-		g.columns = 3 if mode == "grid" else 4
-		g.add_theme_constant_override("h_separation", 3)
-		g.add_theme_constant_override("v_separation", 3)
-	var log_label := _label("", 10)
-	log_label.custom_minimum_size = Vector2(0, 64)
-	var controls := _row()
-	var faster := _button("Schneller", func() -> void: _speed = minf(_speed * 2.0, 8.0), 0)
-	var skip := _button("Überspringen", func() -> void: _skip = true, 0)
-	controls.add_child(faster)
+	_battle_cells.clear()
+	_battle_units.clear()
+	_lines = [[], []]
+	_line_boxes = []
+	_grid_cells = [[], []]
+	_dead.clear()
+
+	var layout := _fill(_vbox(6)) as VBoxContainer
+	page.add_child(layout)
+	var header := _hbox(6)
+	layout.add_child(header)
+	var title := _label("Tag %d" % int(battle["day"]), 18)
+	title.add_theme_color_override("font_color", Color(0.92549, 0.827451, 0.576471))
+	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	header.add_child(title)
+	var ghost := _label("Gegner: %s" % battle.get("ghost_id", "?"), 11)
+	ghost.add_theme_color_override("font_color", Color(0.678431, 0.647059, 0.768627))
+	ghost.autowrap_mode = TextServer.AUTOWRAP_OFF
+	ghost.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	header.add_child(ghost)
+
+	var holders: Array[Control] = []
+	for side in [1, 0]:
+		var caption := _label("Gegner" if side == 1 else "Dein Team", 12)
+		caption.add_theme_color_override("font_color", Color(0.678431, 0.647059, 0.768627))
+		caption.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		var holder := CenterContainer.new()
+		holders.append(holder)
+		if side == 1:
+			layout.add_child(caption)
+			layout.add_child(holder)
+			var gap := Control.new()
+			gap.size_flags_vertical = Control.SIZE_EXPAND_FILL
+			layout.add_child(gap)
+		else:
+			layout.add_child(holder)
+			layout.add_child(caption)
+	var result := _label("", 24, &"", 6)
+	result.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	result.custom_minimum_size = Vector2(0, 64)
+	result.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	result.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	layout.add_child(result)
+	var controls := _hbox(8)
+	layout.add_child(controls)
+	var skip := _button("Überspringen", &"", func() -> void: _skip = true, 52, 16)
+	skip.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	var speed := _button("%dx" % int(SPEEDS[_speed_index]), &"", Callable(), 52, 16)
+	speed.custom_minimum_size.x = 72
+	speed.pressed.connect(func() -> void:
+		_speed_index = (_speed_index + 1) % SPEEDS.size()
+		speed.text = "%dx" % int(SPEEDS[_speed_index]))
 	controls.add_child(skip)
-	for n in [enemy_label, enemy_grid, own_label, own_grid, log_label, controls]:
-		_body.add_child(n)
-	_play(battle, [own_grid, enemy_grid], log_label, controls)
+	controls.add_child(speed)
+
+	_fx = BattleFx.new()
+	_fx.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	page.add_child(_fill(_fx))
+
+	# Gegner in holders[0] (oben), eigenes Team in holders[1] (unten).
+	for i in 2:
+		var side := 1 - i
+		if mode == "grid":
+			var grid := GridContainer.new()
+			grid.columns = rs.grid_cols()
+			grid.add_theme_constant_override("h_separation", 4)
+			grid.add_theme_constant_override("v_separation", 4)
+			holders[i].add_child(grid)
+			var cells: Array = []
+			cells.resize(rs.team_slots())
+			# Vorne liegt immer zur Mitte: beim Gegner unten, beim eigenen Team oben.
+			var rows := int(ceil(float(rs.team_slots()) / rs.grid_cols()))
+			for visual in rs.team_slots():
+				var row := floori(float(visual) / rs.grid_cols())
+				var col := visual % rs.grid_cols()
+				var cell_index: int = (rows - 1 - row) * rs.grid_cols() + col if side == 1 else visual
+				var cell := _battle_cell(grid, side, GRID_CELL)
+				cells[cell_index] = cell
+			_grid_cells[side] = cells
+		else:
+			var box := _hbox(2)
+			holders[i].add_child(box)
+			holders[i].custom_minimum_size = Vector2(0, LINE_CELL.y)
+			_line_boxes.append(box)
+	if mode != "grid":
+		_line_boxes.reverse()  # Index = Seite
+	await get_tree().process_frame
+	if token != _page_token:
+		return
+	await _play(battle, token, layout)
+	if token != _page_token:
+		return
+	_finish_battle(battle, result, controls)
 
 
-## Spielt die Ereignisliste ab. Ein Schritt endet vor dem nächsten Angriff.
-func _play(battle: Dictionary, grids: Array, log_label: Label, controls: HBoxContainer) -> void:
+func _battle_cell(parent: Control, side: int, cell_size: Vector2) -> UnitCell:
+	var cell: UnitCell = CELL_SCENE.instantiate()
+	cell.custom_minimum_size = cell_size
+	parent.add_child(cell)
+	cell.set_floor(FLOOR_ENEMY if side == 1 else FLOOR_PLAYER)
+	cell.show_hp_bar = true
+	cell.set_interactive(false)
+	cell.clear()
+	if cell_size.x < GRID_CELL.x:
+		var sprite: Control = cell.get_node("Body/Sprite")
+		sprite.offset_left = -LINE_SPRITE / 2.0
+		sprite.offset_right = LINE_SPRITE / 2.0
+		sprite.offset_top = -LINE_SPRITE / 2.0 - 4.0
+		sprite.offset_bottom = LINE_SPRITE / 2.0 - 4.0
+	return cell
+
+
+func _wait(seconds: float) -> void:
+	if _skip:
+		return
+	await get_tree().create_timer(seconds / SPEEDS[_speed_index]).timeout
+
+
+func _t(seconds: float) -> float:
+	return seconds / SPEEDS[_speed_index]
+
+
+## Spielt die Ereignisliste ab. Zwischen zwei Angriffen eine kurze Pause, Treffer im Moment des Aufpralls.
+func _play(battle: Dictionary, token: int, shake_target: Control) -> void:
 	var events: Array = battle.get("events", [])
-	var units := {}
-	var lines: Array = [[], []]
-	var cells: Array = [[], []]
-	for side in 2:
-		cells[side].resize(6)
-	var log_lines: Array[String] = []
-	var marks := {}
 	if events.is_empty():
-		log_label.text = "Keine Ereignisse."
-	else:
-		for u: Dictionary in events[0]["units"]:
-			units[u["uid"]] = {"id": u["id"], "level": u["level"], "atk": u["atk"], "hp": u["hp"], "kw": u["keywords"].duplicate(), "side": u["side"]}
-			_place_model(lines, cells, u["side"], int(u["pos"]), u["uid"])
-		_draw_battle(grids, units, lines, cells, marks)
+		return
+	var start: Array = events[0].get("units", [])
+	start.sort_custom(func(a: Dictionary, b: Dictionary) -> bool: return int(a["pos"]) < int(b["pos"]))
+	for u: Dictionary in start:
+		_spawn(u["uid"], u["id"], int(u["side"]), int(u["pos"]), int(u["atk"]), int(u["hp"]), int(u.get("level", 1)), u.get("keywords", []))
+	for uid: Variant in _battle_cells:
+		_battle_cells[uid].pop_in(0.0, _t(T_POP))
+	await _wait(0.6)
 	for i in range(1, events.size()):
+		if token != _page_token:
+			return
 		var e: Dictionary = events[i]
-		if e["ev"] == "attack" and not _skip:
-			_draw_battle(grids, units, lines, cells, marks)
-			log_label.text = "\n".join(log_lines.slice(maxi(log_lines.size() - 4, 0)))
-			await get_tree().create_timer(0.55 / _speed).timeout
-			if not is_inside_tree():
-				return
-			marks = {}
+		var cell: UnitCell = _battle_cells.get(e.get("uid", -1))
 		match e["ev"]:
 			"attack":
-				marks = {e["uid"]: "attack", e["to"]: "target"}
-				log_lines.append("%s greift %s an" % [_name_of(units, e["uid"]), _name_of(units, e["to"])])
+				_purge_dead()
+				await _wait(T_PAUSE)
+				if token != _page_token:
+					return
+				var target: UnitCell = _battle_cells.get(e["to"])
+				if cell != null and target != null and not _skip:
+					cell.lunge(target.center(), _t(T_LUNGE))
+					await _wait(T_LUNGE * 0.5)
+					if token != _page_token:
+						return
+					target.knock(cell.center(), _t(0.2))
 			"damage":
-				if units.has(e["uid"]):
-					units[e["uid"]]["hp"] = e["hp"]
+				if cell != null:
+					cell.set_stats(int(e["hp"]), 0, 0)
+					_mark_keywords(e["uid"])
+					if not _skip:
+						_fx.damage_number(cell, int(e.get("amount", 0)), COLOR_DAMAGE, shake_target)
+						_fx.sparks(cell, COLOR_DAMAGE)
+						Audio.play_hit()
 			"shield_lost":
-				if units.has(e["uid"]):
-					units[e["uid"]]["kw"].erase("divine_shield")
+				if _battle_units.has(e["uid"]):
+					_battle_units[e["uid"]]["kw"].erase("divine_shield")
+					_mark_keywords(e["uid"])
+				if cell != null and not _skip:
+					_fx.ring(cell, COLOR_SHIELD)
+					Audio.play("shield")
 			"buff":
-				if units.has(e["uid"]):
-					units[e["uid"]]["atk"] = e["atk"]
-					units[e["uid"]]["hp"] = e["hp"]
-					units[e["uid"]]["kw"] = e.get("keywords", units[e["uid"]]["kw"])
+				if cell != null:
+					cell.set_atk(int(e["atk"]))
+					cell.set_stats(int(e["hp"]), 0, 0)
+					_battle_units[e["uid"]]["kw"] = e.get("keywords", _battle_units[e["uid"]]["kw"])
+					_mark_keywords(e["uid"])
+					if not _skip:
+						_fx.rise(cell, COLOR_BUFF)
 			"keywords":
-				if units.has(e["uid"]):
-					units[e["uid"]]["kw"] = e["keywords"]
-			"death":
-				if units.has(e["uid"]):
-					log_lines.append("%s stirbt" % _name_of(units, e["uid"]))
-					_remove_model(lines, cells, units[e["uid"]]["side"], e["uid"])
-			"summon", "reborn":
-				units[e["uid"]] = {"id": e["id"], "level": e.get("level", 1), "atk": e["atk"], "hp": e["hp"], "kw": [], "side": e["side"]}
-				_place_model(lines, cells, e["side"], int(e["pos"]), e["uid"])
-				log_lines.append("%s %s" % [_name_of(units, e["uid"]), "kehrt zurück" if e["ev"] == "reborn" else "erscheint"])
+				if _battle_units.has(e["uid"]):
+					_battle_units[e["uid"]]["kw"] = e["keywords"]
+					_mark_keywords(e["uid"])
 			"ability":
-				if units.has(e["uid"]):
-					log_lines.append("%s: %s" % [_name_of(units, e["uid"]), TRIGGER_TEXT.get(e["trigger"], e["trigger"])])
-	_draw_battle(grids, units, lines, cells, {})
-	log_label.text = "\n".join(log_lines.slice(maxi(log_lines.size() - 4, 0)))
+				if cell != null and not _skip:
+					_fx.ring(cell, COLOR_ABILITY)
+			"death":
+				if cell != null:
+					_battle_cells.erase(e["uid"])
+					var side: int = _battle_units[e["uid"]]["side"]
+					_lines[side].erase(e["uid"])
+					if _skip:
+						cell.clear()
+					else:
+						_fx.puff(cell)
+						cell.die(_t(T_DIE))
+						Audio.play("death")
+					if mode != "grid":
+						_dead.append(cell)
+			"summon", "reborn":
+				_spawn(e["uid"], e["id"], int(e["side"]), int(e["pos"]), int(e["atk"]), int(e["hp"]), int(e.get("level", 1)), [])
+				if not _skip:
+					await get_tree().process_frame
+					if token != _page_token:
+						return
+					var spawned: UnitCell = _battle_cells.get(e["uid"])
+					if spawned != null:
+						spawned.pop_in(0.0, _t(T_POP))
+						_fx.ring(spawned, COLOR_BUFF if e["ev"] == "summon" else COLOR_SHIELD)
+	await _wait(0.4)
+	_purge_dead()
 
+
+## Neue Einheit im Kampf: in der Reihe an Stelle pos einfügen oder in Zelle pos stellen.
+func _spawn(uid: int, id: String, side: int, pos: int, atk: int, hp: int, level: int, keywords: Array) -> void:
+	_battle_units[uid] = {"id": id, "side": side, "kw": keywords.duplicate()}
+	var cell: UnitCell
+	if mode == "grid":
+		var cells: Array = _grid_cells[side]
+		if pos < 0 or pos >= cells.size():
+			return
+		cell = cells[pos]
+	else:
+		var box: HBoxContainer = _line_boxes[side]
+		cell = _battle_cell(box, side, LINE_CELL)
+		var line: Array = _lines[side]
+		var index := clampi(pos, 0, line.size())
+		if index < line.size():
+			box.move_child(cell, (_battle_cells[line[index]] as UnitCell).get_index())
+		line.insert(index, uid)
+	_battle_cells[uid] = cell
+	cell.show_unit(id, _sprite_path(id), hp, atk, level, side == 1)
+	_mark_keywords(uid)
+
+
+## Schild als blaues "S" oben links, Spott als grünes "T" oben rechts.
+func _mark_keywords(uid: int) -> void:
+	var cell: UnitCell = _battle_cells.get(uid)
+	if cell == null or not _battle_units.has(uid):
+		return
+	var kw: Array = _battle_units[uid]["kw"]
+	var shield: Label = cell.get_node("%ShieldLabel")
+	shield.text = "S"
+	shield.visible = "divine_shield" in kw
+	var taunt: Label = cell.get_node("%PoisonLabel")
+	taunt.text = "T"
+	taunt.visible = "taunt" in kw
+
+
+func _purge_dead() -> void:
+	for cell in _dead:
+		if is_instance_valid(cell):
+			cell.queue_free()
+	_dead.clear()
+
+
+func _finish_battle(battle: Dictionary, result_label: Label, controls: HBoxContainer) -> void:
+	var outcome: String = battle["result"]
+	var text: String = {"win": "Sieg!", "loss": "Niederlage", "draw": "Unentschieden"}.get(outcome, outcome)
+	if int(battle.get("winner", 0)) == WsCombat.DRAW and outcome != "draw":
+		text = "Unentschieden,\nzählt als " + ("Sieg" if outcome == "win" else "Niederlage")
+	if int(battle.get("lost_lives", 0)) > 0:
+		text += "\n-%d Leben" % int(battle["lost_lives"])
+	result_label.text = text
+	result_label.add_theme_color_override("font_color", COLOR_WIN if outcome == "win" else (COLOR_LOSS if outcome == "loss" else Color.WHITE))
+	if run.is_over():
+		Audio.play("run_won" if run.is_victory() else "run_lost")
+	else:
+		Audio.play("win" if outcome == "win" else "loss")
+	if outcome == "win":
+		_fx.confetti()
+		Haptics.pulse(Haptics.WIN)
 	for child in controls.get_children():
 		child.queue_free()
-	var result: String = battle["result"]
-	var text: String = {"win": "Sieg!", "loss": "Niederlage", "draw": "Unentschieden"}.get(result, result)
-	if battle.get("winner", 0) == WsCombat.DRAW and result != "draw":
-		text = "Unentschieden, zählt als " + ("Sieg" if result == "win" else "Niederlage")
-	if int(battle.get("lost_lives", 0)) > 0:
-		text += " · -%d Leben" % battle["lost_lives"]
-	_header.text = "Tag %d · %s · %d Angriffe" % [battle["day"], text, battle["attacks"]]
-	controls.add_child(_button("Weiter", _after_battle, 0))
-
-
-func _place_model(lines: Array, cells: Array, side: int, pos: int, uid: int) -> void:
-	if mode == "grid":
-		if pos >= 0 and pos < cells[side].size():
-			cells[side][pos] = uid
-	else:
-		lines[side].insert(clampi(pos, 0, lines[side].size()), uid)
-
-
-func _remove_model(lines: Array, cells: Array, side: int, uid: int) -> void:
-	if mode == "grid":
-		var i: int = cells[side].find(uid)
-		if i >= 0:
-			cells[side][i] = null
-	else:
-		lines[side].erase(uid)
-
-
-func _name_of(units: Dictionary, uid: int) -> String:
-	if not units.has(uid):
-		return "?"
-	return "%s%s" % [_unit_name(units[uid]["id"]), "" if units[uid]["side"] == 0 else " (G)"]
-
-
-func _draw_battle(grids: Array, units: Dictionary, lines: Array, cells: Array, marks: Dictionary) -> void:
-	for side in 2:
-		var grid: GridContainer = grids[side]
-		for child in grid.get_children():
-			child.queue_free()
-		var order: Array = cells[side] if mode == "grid" else lines[side]
-		for uid: Variant in order:
-			if uid == null:
-				grid.add_child(_card("", [], Vector2(72, 58), func() -> void: pass, false, true))
-				continue
-			var u: Dictionary = units[uid]
-			var kw := " ".join(u["kw"].map(func(k: String) -> String: return KW_SHORT.get(k, k)))
-			var mark: String = marks.get(uid, "")
-			var text := "%s%s\n%d/%d\n%s" % [">" if mark == "attack" else "", _unit_name(u["id"]), u["atk"], u["hp"], kw]
-			grid.add_child(_card(text, rs.get_def(u["id"]).get("colors", []), Vector2(72, 58), func() -> void: pass, mark != ""))
+	var next := _button("Weiter", &"PrimaryButton", _after_battle, 56, 20)
+	next.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	controls.add_child(next)
 
 
 func _after_battle() -> void:
-	_speed = 1.0
 	if run.is_over():
 		_show_end()
 	else:
 		_show_shop()
-
-
-# --- Ende ---
-
-func _show_end() -> void:
-	_clear()
-	_header.text = "Run vorbei"
-	var verdict := "10 Siege, gewonnen!" if run.is_victory() else "Keine Leben mehr."
-	_body.add_child(_label("%s\n%d Siege, %d Niederlagen, %d Unentschieden in %d Tagen." % [verdict, run.wins, run.losses, run.draws, run.day - 1], 12))
-	var names: Array[String] = []
-	for unit: Dictionary in run.team_units():
-		names.append("%s S%d" % [_unit_name(unit["id"]), int(unit["level"])])
-	_body.add_child(_label("Letztes Team: " + ", ".join(names)))
-	_body.add_child(_button("Neuer Run", _show_start))

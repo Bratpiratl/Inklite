@@ -70,6 +70,12 @@ func show_text(title: String, body: String, icon: Texture2D = null) -> void:
 	_finish()
 
 
+## Kleine Zeile unter dem Titel, z. B. Seltenheit und Preis.
+func set_subtitle(text: String) -> void:
+	_sub.text = text
+	_sub.visible = text != ""
+
+
 func set_action(text: String, enabled: bool = true) -> void:
 	_action.text = text
 	_action.disabled = not enabled

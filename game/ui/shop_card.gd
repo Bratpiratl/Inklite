@@ -22,16 +22,35 @@ const PRICE_POOR := Color(0.85, 0.15, 0.25)
 var index := -1
 var _has_offer := false
 var _type := ""
+var _base_color := POOR_COLOR
 
 
 func show_offer(def: Dictionary, stats: Dictionary) -> void:
 	_has_offer = true
 	_type = def.get("type", "")
+	_base_color = TYPE_COLORS.get(_type, POOR_COLOR)
 	%Sprite.texture = load(SPRITE_ROOT + def["sprite"])
 	%AtkLabel.text = str(stats["atk"])
 	%HpLabel.text = str(stats["hp"])
 	%CostLabel.text = Loc.t("COST", {"n": def["cost"]})
 	%NameLabel.text = Loc.monster(def["id"])
+	_show_parts()
+
+
+## Angebot ohne MonsterDb (Workshop-Test): Name, Bild, Werte, Preis und Kartenfarbe direkt.
+func show_custom(unit_name: String, texture: Texture2D, atk: int, hp: int, cost: int, color: Color) -> void:
+	_has_offer = true
+	_base_color = color
+	%Sprite.texture = texture
+	%AtkLabel.text = str(atk)
+	%HpLabel.text = str(hp)
+	%CostLabel.text = Loc.t("COST", {"n": cost})
+	%NameLabel.text = unit_name
+	disabled = false
+	_show_parts()
+
+
+func _show_parts() -> void:
 	for node: CanvasItem in [%Sprite, %AtkLabel, %HpLabel, %Footer]:
 		node.visible = true
 	set_affordable(true)
@@ -39,7 +58,7 @@ func show_offer(def: Dictionary, stats: Dictionary) -> void:
 
 ## Grau mit rotem Preis, wenn das Gold nicht reicht. Antippen bleibt möglich, die Karte erklärt es.
 func set_affordable(value: bool) -> void:
-	_apply_color(TYPE_COLORS.get(_type, POOR_COLOR) if value else POOR_COLOR)
+	_apply_color(_base_color if value else POOR_COLOR)
 	%Sprite.modulate = Color.WHITE if value else POOR_SPRITE
 	%CostLabel.add_theme_color_override("font_color", PRICE_COLOR if value else PRICE_POOR)
 

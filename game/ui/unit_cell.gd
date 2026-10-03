@@ -6,6 +6,8 @@ extends Control
 signal tapped(slot: int)
 signal dropped_on(from_slot: int, to_slot: int)
 signal offer_dropped(offer_index: int, slot: int)
+## Wie dropped_on, aber mit allen Daten des gezogenen Monsters (inklusive loc), für mehrere Raster.
+signal unit_dropped(data: Dictionary, slot: int)
 
 const DRAG_KIND := "board_unit"
 const HIGHLIGHT := Color(1.45, 1.3, 0.75)
@@ -39,6 +41,8 @@ const PILL_SIZE := Vector2(24, 15)
 @onready var _hp_lag: ColorRect = %HpLag
 
 var slot := -1
+## Name des Rasters, zu dem das Feld gehört (z. B. "team" oder "bench"). Steht in den Zugdaten.
+var loc := ""
 var unit_id := ""
 var level := 1
 var atk := 0
@@ -255,7 +259,7 @@ func _get_drag_data(_at_position: Vector2) -> Variant:
 	preview.add_child(image)
 	set_drag_preview(preview)
 	_body.modulate.a = DRAG_SOURCE_ALPHA
-	return {"kind": DRAG_KIND, "slot": slot}
+	return {"kind": DRAG_KIND, "slot": slot, "loc": loc}
 
 
 func _can_drop_data(_at_position: Vector2, data: Variant) -> bool:
@@ -274,6 +278,7 @@ func _drop_data(_at_position: Vector2, data: Variant) -> void:
 		offer_dropped.emit(int(data["index"]), slot)
 	else:
 		dropped_on.emit(int(data["slot"]), slot)
+		unit_dropped.emit(data, slot)
 
 
 ## Boden pulsiert golden: mögliches Ziel oder passender Verschmelz-Partner.

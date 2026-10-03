@@ -35,6 +35,13 @@ func _draw() -> void:
 	draw_rect(Rect2(0, size.y - 3, size.x, 3), OUTLINE)
 
 
+## Für Modi ohne RunState (Workshop-Test): Leben, Titel in der Mitte, Siege von max.
+func show_values(lives: int, title: String, wins: int, max_wins: int) -> void:
+	%LivesLabel.text = str(lives)
+	%WinsLabel.text = "%d/%d" % [wins, max_wins]
+	%RoundLabel.text = title.to_upper()
+
+
 ## show_gold bleibt für Aufrufer erhalten, Gold steht im Shop neben den Angeboten.
 func show_run(run: RunState, _show_gold: bool = true) -> void:
 	%LivesLabel.text = str(run.lives)
