@@ -12,9 +12,9 @@ const TRAINER_SCENE := "res://ui/trainer_select.tscn"
 const SETTINGS_SCENE := "res://ui/settings.tscn"
 const HISTORY_SCENE := "res://ui/history.tscn"
 const HELP_SCENE := "res://ui/help.tscn"
-## Workshop-Test (Regelsatz aus res://ws_data/, kommt beim Deploy aus workshop/public/ hinein).
+## Workshop (Regelsatz in res://data/workshop/, bereinigt aus workshop/export_public.py).
 const WORKSHOP_SCENE := "res://tools/ws_play.tscn"
-const WORKSHOP_DATA := "res://ws_data/ruleset.json"
+const WORKSHOP_DATA := WsRuleset.GAME_DATA_DIR + "/ruleset.json"
 const SPRITE_ROOT := "res://assets/sprites/"
 
 var db: MonsterDb
