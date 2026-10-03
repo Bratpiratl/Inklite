@@ -1,5 +1,5 @@
 extends Control
-## Titelbildschirm: weiterspielen, neuer Run, Historie, Einstellungen.
+## Titelbildschirm: weiterspielen, neuer Run, Workshop, Historie, Einstellungen, klassischer Modus.
 
 const PARADE_SIZE := 5
 const BOB_HEIGHT := 4.0
@@ -9,27 +9,61 @@ const BOB_TIME := 0.5
 @onready var _start: Button = %StartButton
 @onready var _parade: HBoxContainer = %Parade
 
+## Der klassische Modus (12 Monster, 3x3-Raster) bleibt über einen kleinen Knopf erreichbar.
+static var _classic := false
+
 
 func _ready() -> void:
-	var has_save := Session.has_save()
-	_continue.visible = has_save
-	# Die wichtigste Aktion bekommt den hellen Button.
-	_start.theme_type_variation = &"" if has_save else &"PrimaryButton"
 	_continue.pressed.connect(_on_continue)
-	_start.pressed.connect(func() -> void: Session.goto(Session.TRAINER_SCENE))
+	_start.pressed.connect(_on_start)
 	%HistoryButton.pressed.connect(func() -> void: Session.goto(Session.HISTORY_SCENE))
-	# Nur, wenn der Workshop-Regelsatz im Build steckt (beim Deploy aus workshop/public/ kopiert).
-	%WorkshopButton.visible = FileAccess.file_exists(Session.WORKSHOP_DATA)
-	%WorkshopButton.pressed.connect(func() -> void: Session.goto(Session.WORKSHOP_SCENE))
+	%WorkshopButton.pressed.connect(func() -> void:
+		Session.workshop_test = true
+		Session.goto(Session.WORKSHOP_SCENE))
 	%SettingsButton.pressed.connect(func() -> void: Session.goto(Session.SETTINGS_SCENE))
 	%HelpButton.pressed.connect(func() -> void: Session.open_help(Session.TITLE_SCENE))
+	%ClassicButton.pressed.connect(func() -> void:
+		_classic = not _classic
+		Audio.play("click")
+		_show_mode())
 	%VersionLabel.text = Loc.t("VERSION", {"v": RunLogger.version()})
 	_build_parade()
+	_show_mode()
 	Audio.play_music("menu")
 
 
+## Neuer Modus: Fortsetzen und Neuer Run laufen über den Workshop-Regelsatz. Klassisch: alter Ablauf.
+func _show_mode() -> void:
+	var has_workshop := FileAccess.file_exists(Session.WORKSHOP_DATA)
+	if not has_workshop:
+		_classic = true
+	var has_save := Session.has_save() if _classic else Session.has_workshop_save()
+	_continue.visible = has_save
+	# Die wichtigste Aktion bekommt den hellen Button.
+	_start.theme_type_variation = &"" if has_save else &"PrimaryButton"
+	_continue.theme_type_variation = &"PrimaryButton"
+	%WorkshopButton.visible = has_workshop and not _classic
+	%HistoryButton.visible = _classic
+	%Subtitle.text = Loc.t("TITLE_CLASSIC" if _classic else "TITLE_SUBTITLE")
+	%ClassicButton.visible = has_workshop
+	%ClassicButton.text = Loc.t("BTN_CLASSIC_BACK" if _classic else "BTN_CLASSIC")
+
+
+func _on_start() -> void:
+	if _classic:
+		Session.goto(Session.TRAINER_SCENE)
+		return
+	Session.workshop_test = false
+	Session.workshop_continue = false
+	Session.goto(Session.WORKSHOP_SCENE)
+
+
 func _on_continue() -> void:
-	if Session.load_run():
+	if not _classic:
+		Session.workshop_test = false
+		Session.workshop_continue = true
+		Session.goto(Session.WORKSHOP_SCENE)
+	elif Session.load_run():
 		Session.goto(Session.SHOP_SCENE)
 	else:
 		Session.clear_save()

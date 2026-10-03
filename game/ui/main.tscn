@@ -47,7 +47,7 @@ layout_mode = 2
 size_flags_vertical = 3
 
 [node name="Logo" type="TextureRect" parent="Margin/Layout"]
-custom_minimum_size = Vector2(128, 128)
+custom_minimum_size = Vector2(104, 104)
 layout_mode = 2
 size_flags_horizontal = 4
 texture = ExtResource("3_logo")
@@ -64,6 +64,7 @@ text = "INKLITE"
 horizontal_alignment = 1
 
 [node name="Subtitle" type="Label" parent="Margin/Layout"]
+unique_name_in_owner = true
 layout_mode = 2
 theme_override_constants/outline_size = 4
 text = "TITLE_SUBTITLE"
@@ -76,7 +77,7 @@ theme_override_constants/separation = 8
 alignment = 1
 
 [node name="Gap" type="Control" parent="Margin/Layout"]
-custom_minimum_size = Vector2(0, 12)
+custom_minimum_size = Vector2(0, 4)
 layout_mode = 2
 
 [node name="ContinueButton" type="Button" parent="Margin/Layout"]
@@ -137,6 +138,22 @@ layout_mode = 2
 size_flags_horizontal = 4
 focus_mode = 0
 text = "BTN_SETTINGS"
+
+[node name="ClassicButton" type="Button" parent="Margin/Layout"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(240, 48)
+layout_mode = 2
+size_flags_horizontal = 4
+focus_mode = 0
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_hover_color = Color(1, 1, 1, 1)
+theme_override_colors/font_pressed_color = Color(1, 1, 1, 1)
+theme_override_colors/font_hover_pressed_color = Color(1, 1, 1, 1)
+theme_override_colors/font_outline_color = Color(0.121569, 0.105882, 0.164706, 1)
+theme_override_constants/outline_size = 4
+theme_override_font_sizes/font_size = 12
+flat = true
+text = "BTN_CLASSIC"
 
 [node name="BottomSpacer" type="Control" parent="Margin/Layout"]
 layout_mode = 2

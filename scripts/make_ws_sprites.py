@@ -4,7 +4,7 @@
 Ausgewählt wird nach Farbe: Die erste Farbe der Einheit wird mit der Durchschnittsfarbe der Bilder
 verglichen, das ähnlichste freie Bild gewinnt. Ergebnis:
   game/assets/sprites/workshop/<id>.png  (schwarzer Rand transparent, wie bei den Monstern)
-  game/tools/ws_play_sprites.json         (id -> Pfad unter assets/sprites/)
+  game/data/ws_sprites.json         (id -> Pfad unter assets/sprites/)
 Eigene Bilder: einfach die PNG-Datei mit gleichem Namen ersetzen oder den Pfad in der JSON ändern.
 Neu erzeugen: python3 scripts/make_ws_sprites.py [units.json]
 Vorhandene Einträge in der JSON bleiben erhalten, nur neue Einheiten bekommen ein Bild.
@@ -18,7 +18,7 @@ from PIL import Image
 ROOT = Path(__file__).resolve().parent.parent
 TILES = ROOT / "game/assets/packs/tiny_creatures/Tiles"
 OUT = ROOT / "game/assets/sprites/workshop"
-MAPPING = ROOT / "game/tools/ws_play_sprites.json"
+MAPPING = ROOT / "game/data/ws_sprites.json"
 UNITS = Path(sys.argv[1]) if len(sys.argv) > 1 else ROOT / "workshop/public/jinto_bg/units.json"
 
 # Tiere und Monster, keine Menschen und keine winzigen Bilder. Die 12 Monster des Hauptspiels fehlen.

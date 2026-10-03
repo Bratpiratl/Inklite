@@ -201,3 +201,178 @@ SETTINGS_ON,An,On
 SETTINGS_OFF,Aus,Off
 HELP_SHOP_T,Shop-Kniffe,Shop tricks
 HELP_SHOP,"Ziehe ein Angebot direkt auf ein freies Feld, um es dort aufzustellen, oder auf ein gleiches Monster, um es dort zu verschmelzen. Einfrieren hält ein Angebot fest, auch beim Neu würfeln und in der nächsten Runde. Die Zahl 2/3 auf einem Angebot zeigt, wie viele davon du schon hast.","Drag an offer straight onto an empty square to place it there, or onto an identical monster to merge it there. Freezing keeps an offer, even when you reroll and into the next round. The 2/3 on an offer shows how many of it you already have."
+WS_TITLE,INKLITE WORKSHOP,INKLITE WORKSHOP
+WS_GAME_TITLE,Neuer Run,New run
+WS_RULESET,Regelsatz,Rule set
+WS_RULESET_INFO,"{name} (Version {version}): {units} Einheiten, {ghosts} Geisterteams.
+Antippen zeigt Infos, Ziehen kauft und stellt um.","{name} (version {version}): {units} units, {ghosts} ghost teams.
+Tap for info, drag to buy and rearrange."
+WS_NO_GHOSTS,Noch keine Geisterteams: Im Editor erst eine Simulation laufen lassen.,No ghost teams yet: run a simulation in the editor first.
+WS_DIFFICULTY,Schwierigkeit,Difficulty
+WS_DIFF_RANGE,Gegnerstärke {min} bis {max}.,Enemy strength {min} to {max}.
+WS_DIFF_leicht,"Schwache Gegner, zum Reinkommen.","Weak enemies, to get started."
+WS_DIFF_mittel,Gegner aus der Mitte des Feldes.,Enemies from the middle of the field.
+WS_DIFF_schwer,"Nur starke Gegner, richtig hart.","Only strong enemies, really hard."
+WS_NEW_BG,"Neuer Run, BG-Kampf","New run, BG combat"
+WS_NEW_GRID,"Neuer Run, Raster-Kampf","New run, grid combat"
+WS_START_RUN,Run starten,Start run
+WS_BACK_TO_GAME,Zurück zum Spiel,Back to the game
+WS_WON_TITLE,Gewonnen!,Victory!
+WS_OVER_TITLE,Run vorbei,Run over
+WS_RESULT,Ergebnis,Result
+WS_WON_TEXT,Der Run ist gewonnen.,You won the run.
+WS_LOST_TEXT,Keine Leben mehr.,No lives left.
+WS_SUMMARY,"{wins} Siege, {losses} Niederlagen, {draws} Unentschieden in {days} Tagen.","{wins} wins, {losses} losses, {draws} draws in {days} days."
+WS_DIFFICULTY_LINE,Schwierigkeit: {name},Difficulty: {name}
+WS_NEW_RUN,Neuer Run,New run
+WS_BENCH,Bank,Bench
+WS_CAPTION_BG,Platz 1 bis 6 greifen der Reihe nach an,Slots 1 to 6 attack in order
+WS_CAPTION_GRID,"obere Reihe: vorne, wird zuerst getroffen","top row: front, gets hit first"
+WS_DAY,Tag {n},Day {n}
+WS_FREE,Gratis ({n}),Free ({n})
+WS_REROLL,Würfeln ({n}),Reroll ({n})
+WS_LOCK,Sperren,Lock
+WS_UNLOCK,Entsperren,Unlock
+WS_NOTE_NO_GOLD,Dafür reicht dein Gold nicht.,You don't have enough gold.
+WS_NOTE_FULL,Team und Bank sind voll. Verkaufe erst eine Einheit.,Team and bench are full. Sell a unit first.
+WS_NOTE_COPIES,Du hast {n} davon auf Stufe 1. Bei {max} verschmelzen sie.,You have {n} of these at level 1. At {max} they merge.
+WS_NOTE_DRAG,Tipp: Ziehe die Karte direkt auf einen Platz.,Tip: drag the card straight onto a slot.
+WS_SELL,Verkaufen (+{n}),Sell (+{n})
+WS_NOTE_OWNED,"Ziehen stellt um, auch zwischen Team und Bank. Nur das Team kämpft.","Drag to rearrange, also between team and bench. Only the team fights."
+WS_MERGED,Verschmolzen zu Stufe {n}!,Merged into level {n}!
+WS_SOLD,Verkauft für {n} Gold.,Sold for {n} gold.
+WS_LOCKED_T,Shop gesperrt,Shop locked
+WS_UNLOCKED_T,Shop entsperrt,Shop unlocked
+WS_LOCKED_INFO,Die Angebote bleiben bis morgen liegen. Würfeln hebt die Sperre auf.,The offers stay until tomorrow. Rerolling removes the lock.
+WS_UNLOCKED_INFO,Morgen gibt es neue Angebote.,Tomorrow brings new offers.
+WS_SELL_DROP,Hierher ziehen: verkaufen (+{n}),Drop here: sell (+{n})
+WS_LIVES_DAY,Tag {n}: {v},day {n}: {v}
+WS_LIVES_FROM,ab Tag {n}: {v},from day {n}: {v}
+WS_LIVES_INFO,Eine Niederlage kostet je nach Tag Leben ({list}). Bei 0 ist der Run vorbei.,A loss costs lives depending on the day ({list}). At 0 the run is over.
+WS_SECOND_CHANCE,Einmal pro Run gibt es eine zweite Chance mit 1 Leben.,Once per run you get a second chance with 1 life.
+WS_WINS_INFO,Mit {n} Siegen gewinnst du den Run.,Reach {n} wins to win the run.
+WS_DRAW_WIN,Ein Unentschieden zählt als Sieg.,A draw counts as a win.
+WS_DRAW_LOSS,Ein Unentschieden zählt als Niederlage.,A draw counts as a loss.
+WS_ROUND_INFO,"Jeder Tag ist eine Shop-Phase und ein Kampf. Mit jedem Tag steigt der Shop-Rang, dann kommen seltenere Einheiten. Heute bist du auf Rang {n}.","Every day is a shop phase and a fight. The shop rank rises each day, bringing rarer units. Today you are at rank {n}."
+WS_GOLD_INFO,"Du hast {gold} Gold. Jeden Tag gibt es neues Gold, Würfeln kostet {cost}.","You have {gold} gold. Every day brings new gold, rerolling costs {cost}."
+WS_GOLD_KEEP,Übriges Gold bleibt für morgen.,Leftover gold carries over to tomorrow.
+WS_GOLD_LOSE,Übriges Gold verfällt am Tagesende.,Leftover gold is lost at the end of the day.
+WS_ODDS_T,Chancen auf Rang {n},Odds at rank {n}
+WS_ODDS_INFO,So wahrscheinlich ist jede Seltenheit pro Angebot (Gewichte):,How likely each rarity is per offer (weights):
+WS_HELP_T,So geht's,How to play
+WS_HELP,"Kaufen: Angebot antippen oder direkt auf einen Platz im Team oder auf der Bank ziehen. Drei gleiche verschmelzen zur nächsten Stufe.
+Umstellen: Einheit auf einen anderen Platz ziehen. Nur das Team kämpft, die Bank wartet.
+Sperren: Die Angebote bleiben bis morgen.
+Kampf!: Dein Team kämpft gegen ein gespeichertes Geisterteam.","Buy: tap an offer or drag it straight onto a team or bench slot. Three of a kind merge into the next level.
+Rearrange: drag a unit onto another slot. Only the team fights, the bench waits.
+Lock: the offers stay until tomorrow.
+Fight!: your team fights a saved ghost team."
+WS_ENEMY_STRENGTH,Gegnerstärke {n},Enemy strength {n}
+WS_ENEMY_ID,Gegner: {id},Enemy: {id}
+WS_ENEMY,Gegner,Enemy
+WS_YOUR_TEAM,Dein Team,Your team
+WS_SKIP,Überspringen,Skip
+WS_WIN,Sieg!,Victory!
+WS_LOSS,Niederlage,Defeat
+WS_DRAW,Unentschieden,Draw
+WS_DRAW_AS_WIN,"Unentschieden,
+zählt als Sieg","Draw,
+counts as a win"
+WS_DRAW_AS_LOSS,"Unentschieden,
+zählt als Niederlage","Draw,
+counts as a loss"
+WS_LIVES_LOST,-{n} Leben,-{n} lives
+WS_NEXT,Weiter,Continue
+WS_ATK,{n} Angriff,{n} attack
+WS_HP,{n} Leben,{n} HP
+WS_TEMPLATE,Vorlage: {name} (BG Stufe {tier}),Template: {name} (BG tier {tier})
+WS_SUB,"{rarity}, Stufe {level}, {colors}","{rarity}, level {level}, {colors}"
+WS_SUB_TOKEN,"Spielstein, Stufe {level}","Token, level {level}"
+WS_AB_ATK,+{n} Angriff,+{n} attack
+WS_AB_HP,+{n} Leben,+{n} HP
+WS_AB_FROM,+Angriff aus {from},+attack from {from}
+WS_AB_PERM, (dauerhaft), (permanent)
+WS_AB_GETS,{target} bekommt {kw},{target} gains {kw}
+WS_AB_RANDOM_KW,zufälliges Schlüsselwort,a random keyword
+WS_AB_LOSES,{target} verliert {kw},{target} loses {kw}
+WS_AB_SUMMON,beschwört {unit},summons {unit}
+WS_AB_DR_UNIT,Einheit mit Todesröcheln,a unit with deathrattle
+WS_AB_DAMAGE,{n}{extra} Schaden an {target},{n}{extra} damage to {target}
+WS_AB_DESTROY,vernichtet {target},destroys {target}
+WS_AB_ATTACK_NOW,greift sofort an,attacks immediately
+WS_AB_TRIGGER,löst {trigger} von {target} aus,triggers {trigger} of {target}
+WS_AB_GOLD,+{n} Gold,+{n} gold
+WS_AB_FREE,+{n} Gratis-Würfe,+{n} free rerolls
+BTN_CLASSIC,Klassischer Modus,Classic mode
+BTN_CLASSIC_BACK,Zurück zum neuen Modus,Back to the new mode
+TITLE_CLASSIC,"Klassisch: 12 Monster, 3x3-Raster","Classic: 12 monsters, 3x3 grid"
+WS_KW_taunt,Spott,Taunt
+WS_KW_divine_shield,Schild,Shield
+WS_KW_reborn,Wieder,Reborn
+WS_KW_windfury,Wind,Windfury
+WS_KW_venomous,Gift,Venom
+WS_KW_cleave,Spalt,Cleave
+WS_KW_stealth,Tarn,Stealth
+WS_KWL_taunt,Spott: Gegner müssen zuerst diese Einheit angreifen.,Taunt: enemies must attack this unit first.
+WS_KWL_divine_shield,"Schild: Der erste Treffer macht keinen Schaden, nur der Schild geht verloren.","Shield: the first hit deals no damage, only the shield breaks."
+WS_KWL_reborn,Wiedergeburt: Kehrt nach dem ersten Tod mit 1 Leben zurück.,Reborn: returns with 1 HP after its first death.
+WS_KWL_windfury,Windzorn: Greift zweimal hintereinander an.,Windfury: attacks twice in a row.
+WS_KWL_venomous,Gift: Jeder Treffer gegen eine Einheit tötet sie.,Venom: any hit on a unit destroys it.
+WS_KWL_cleave,Spalten: Trifft auch die Nachbarn des Ziels.,Cleave: also hits the target's neighbours.
+WS_KWL_stealth,"Tarnung: Kann erst angegriffen werden, wenn sie selbst angegriffen hat.",Stealth: can't be attacked until it has attacked.
+WS_TRIG_start_of_combat,Kampfbeginn,Start of combat
+WS_TRIG_on_attack,Beim Angriff,On attack
+WS_TRIG_after_attack,Nach dem Angriff,After attacking
+WS_TRIG_on_hurt,Bei Schaden,When hurt
+WS_TRIG_on_death,Todesröcheln,Deathrattle
+WS_TRIG_on_ally_death,Wenn ein Verbündeter stirbt,When an ally dies
+WS_TRIG_avenge,Rache,Avenge
+WS_TRIG_on_summon,Wenn ein Verbündeter beschworen wird,When an ally is summoned
+WS_TRIG_on_ally_attack,Wenn ein Verbündeter angreift,When an ally attacks
+WS_TRIG_on_kill,Nach einem Kill,After a kill
+WS_TRIG_on_shield_lost,Schild verloren,Shield lost
+WS_TRIG_on_ally_shield_lost,Verbündeter verliert Schild,Ally loses shield
+WS_TRIG_on_reborn,Nach einer Wiedergeburt,After reborn
+WS_TRIG_after_deathrattle,Nach einem Todesröcheln,After a deathrattle
+WS_TRIG_on_buy,Beim Kauf,When bought
+WS_TRIG_on_sell,Beim Verkauf,When sold
+WS_TRIG_end_of_turn,Rundenende,End of turn
+WS_TRIG_start_of_turn,Tagesbeginn,Start of day
+WS_TRIG_on_ally_buy,Wenn du etwas kaufst,When you buy something
+WS_TRIG_after_battlecry,Nach einem Kampfschrei,After a battlecry
+WS_TRIG_on_reroll,Beim Würfeln,On reroll
+WS_TGT_self,sich,itself
+WS_TGT_adjacent,Nachbarn,neighbours
+WS_TGT_ally_random,zufälliger Verbündeter,a random ally
+WS_TGT_ally_random_other,anderer Verbündeter,another ally
+WS_TGT_allies_all,alle Verbündeten,all allies
+WS_TGT_allies_other,andere Verbündete,other allies
+WS_TGT_ally_leftmost,Verbündeter links,leftmost ally
+WS_TGT_trigger_unit,Auslöser,the trigger unit
+WS_TGT_target,Ziel,the target
+WS_TGT_attacker,Angreifer,the attacker
+WS_TGT_killer,Mörder,the killer
+WS_TGT_enemy_random,zufälliger Gegner,a random enemy
+WS_TGT_enemies_all,alle Gegner,all enemies
+WS_TGT_enemy_highest_hp,stärkster Gegner,the strongest enemy
+WS_TGT_all_others,alle anderen,all others
+WS_PAS_deathrattle_twice,Todesröcheln doppelt,Deathrattles trigger twice
+WS_PAS_battlecry_twice,Kampfschreie doppelt,Battlecries trigger twice
+WS_PAS_end_of_turn_twice,Rundenende doppelt,End of turn triggers twice
+WS_COLOR_rot,Rot,Red
+WS_COLOR_blau,Blau,Blue
+WS_COLOR_gruen,Grün,Green
+WS_COLOR_violett,Violett,Violet
+WS_COLOR_grau,Grau,Grey
+WS_COLOR_gold,Gold,Gold
+WS_COLOR_schwarz,Schwarz,Black
+WS_COLOR_tuerkis,Türkis,Turquoise
+WS_COLOR_braun,Braun,Brown
+WS_COLOR_pink,Pink,Pink
+WS_COLOR_orange,Orange,Orange
+WS_RARITY_0,Gewöhnlich,Common
+WS_RARITY_1,Ungewöhnlich,Uncommon
+WS_RARITY_2,Selten,Rare
+WS_RARITY_3,Sehr selten,Super rare
+WS_RARITY_4,Legendär,Legendary
+WS_NO_RULESET,Kein Regelsatz gefunden.,No rule set found.

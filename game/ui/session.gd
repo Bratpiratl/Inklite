@@ -13,8 +13,9 @@ const SETTINGS_SCENE := "res://ui/settings.tscn"
 const HISTORY_SCENE := "res://ui/history.tscn"
 const HELP_SCENE := "res://ui/help.tscn"
 ## Workshop (Regelsatz in res://data/workshop/, bereinigt aus workshop/export_public.py).
-const WORKSHOP_SCENE := "res://tools/ws_play.tscn"
+const WORKSHOP_SCENE := "res://ui/ws_play.tscn"
 const WORKSHOP_DATA := WsRuleset.GAME_DATA_DIR + "/ruleset.json"
+const WORKSHOP_SAVE := "user://ws_run.json"
 const SPRITE_ROOT := "res://assets/sprites/"
 
 var db: MonsterDb
@@ -42,6 +43,21 @@ func new_run(trainer_id: String) -> void:
 	_attach_logger()
 	last_battle = {}
 	save()
+
+
+## true: Workshop-Testbereich (Regelsatz-Info, BG oder Raster, kein Speichern). false: normales Spiel.
+var workshop_test := true
+## Beim Öffnen der Workshop-Szene den gespeicherten Run fortsetzen.
+var workshop_continue := false
+
+
+func has_workshop_save() -> bool:
+	return FileAccess.file_exists(WORKSHOP_SAVE)
+
+
+func clear_workshop_save() -> void:
+	if has_workshop_save():
+		DirAccess.remove_absolute(WORKSHOP_SAVE)
 
 
 func has_save() -> bool:

@@ -3,12 +3,11 @@ extends Control
 ## weiße Panels, Shop-Karten, Info-Karte, Kampf wie in der Arena. Die Regeln stecken in WsRun und WsCombat,
 ## hier wird nur angezeigt und weitergereicht.
 ## Nur im separaten Test-Build (workshop/build_play.sh), nie im Hauptspiel. Der Regelsatz liegt dort unter
-## res://ws_data/. Texte stehen bewusst fest im Code und nicht in translations.csv, weil die Szene ein
-## Werkzeug ist. Bilder: tools/ws_play_sprites.json (id -> Pfad unter assets/sprites/), erzeugt mit
+## res://ws_data/. Texte über translations.csv (Schlüssel WS_...). Bilder: data/ws_sprites.json (id -> Pfad unter assets/sprites/), erzeugt mit
 ## scripts/make_ws_sprites.py, Platzhalter aus Tiny Creatures.
 
-const DATA_DIR := "res://ws_data"
-const SPRITE_MAP := "res://tools/ws_play_sprites.json"
+const DATA_DIR := WsRuleset.GAME_DATA_DIR
+const SPRITE_MAP := "res://data/ws_sprites.json"
 const SPRITE_ROOT := "res://assets/sprites/"
 const FALLBACK_SPRITE := "creatures/ember_pup.png"
 const HUD_SCENE := preload("res://ui/hud.tscn")
@@ -43,37 +42,6 @@ const COLOR_LOSS := Color(1, 0.46, 0.46)
 const COLOR_ATK := "#ffd461"
 const COLOR_HP := "#ff7676"
 const COLOR_TERM := "#e0dbed"
-
-const KW_SHORT := {"taunt": "Spott", "divine_shield": "Schild", "reborn": "Wieder", "windfury": "Wind",
-	"venomous": "Gift", "cleave": "Spalt", "stealth": "Tarn"}
-const KW_LONG := {
-	"taunt": "Spott: Gegner müssen zuerst diese Einheit angreifen.",
-	"divine_shield": "Schild: Der erste Treffer macht keinen Schaden, nur der Schild geht verloren.",
-	"reborn": "Wiedergeburt: Kehrt nach dem ersten Tod mit 1 Leben zurück.",
-	"windfury": "Windzorn: Greift zweimal hintereinander an.",
-	"venomous": "Gift: Jeder Treffer gegen eine Einheit tötet sie.",
-	"cleave": "Spalten: Trifft auch die Nachbarn des Ziels.",
-	"stealth": "Tarnung: Kann erst angegriffen werden, wenn sie selbst angegriffen hat.",
-}
-const TRIGGER_TEXT := {
-	"start_of_combat": "Kampfbeginn", "on_attack": "Beim Angriff", "after_attack": "Nach dem Angriff",
-	"on_hurt": "Bei Schaden", "on_death": "Todesröcheln", "on_ally_death": "Wenn ein Verbündeter stirbt",
-	"avenge": "Rache", "on_summon": "Wenn ein Verbündeter beschworen wird", "on_ally_attack": "Wenn ein Verbündeter angreift",
-	"on_kill": "Nach einem Kill", "on_shield_lost": "Schild verloren", "on_ally_shield_lost": "Verbündeter verliert Schild",
-	"on_reborn": "Nach einer Wiedergeburt", "after_deathrattle": "Nach einem Todesröcheln", "on_buy": "Beim Kauf",
-	"on_sell": "Beim Verkauf", "end_of_turn": "Rundenende", "start_of_turn": "Tagesbeginn",
-	"on_ally_buy": "Wenn du etwas kaufst", "after_battlecry": "Nach einem Kampfschrei", "on_reroll": "Beim Würfeln",
-}
-const TARGET_TEXT := {
-	"self": "sich", "adjacent": "Nachbarn", "ally_random": "zufälliger Verbündeter", "ally_random_other": "anderer Verbündeter",
-	"allies_all": "alle Verbündeten", "allies_other": "andere Verbündete", "ally_leftmost": "Verbündeter links",
-	"trigger_unit": "Auslöser", "target": "Ziel", "attacker": "Angreifer", "killer": "Mörder", "enemy_random": "zufälliger Gegner",
-	"enemies_all": "alle Gegner", "enemy_highest_hp": "stärkster Gegner", "all_others": "alle anderen",
-}
-const DIFFICULTY_HINTS := {"leicht": "Schwache Gegner, zum Reinkommen.", "mittel": "Gegner aus der Mitte des Feldes.",
-	"schwer": "Nur starke Gegner, richtig hart."}
-const PASSIVE_TEXT := {"deathrattle_twice": "Todesröcheln doppelt", "battlecry_twice": "Kampfschreie doppelt",
-	"end_of_turn_twice": "Rundenende doppelt"}
 
 var rs: WsRuleset
 var run: WsRun
@@ -138,7 +106,7 @@ func _ready() -> void:
 	screen.add_child(_hud)
 	_hud.info_requested.connect(_on_hud_info)
 	_hud.help_pressed.connect(_show_help)
-	_hud.menu_pressed.connect(_show_start)
+	_hud.menu_pressed.connect(_on_menu)
 	_pages = _safe_margin([10, 5, 10, 8], false)
 	_pages.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	screen.add_child(_pages)
@@ -161,9 +129,13 @@ func _ready() -> void:
 	rs = WsRuleset.load_dir(DATA_DIR)
 	if rs == null:
 		var page := _new_page()
-		page.add_child(_title_label("Kein Regelsatz im Build gefunden (res://ws_data)."))
+		page.add_child(_title_label(Loc.t("WS_NO_RULESET")))
 		return
-	_show_start()
+	if not Session.workshop_test and Session.workshop_continue and _load_run():
+		_show_shop()
+	else:
+		_show_start()
+	Session.workshop_continue = false
 
 
 # --- Bausteine ---
@@ -285,6 +257,8 @@ func _color_of(color_id: String) -> Color:
 
 
 func _color_name(color_id: String) -> String:
+	if _tr("WS_COLOR_", color_id) != color_id:
+		return _tr("WS_COLOR_", color_id)
 	for c: Dictionary in rs.rules.get("colors", []):
 		if c["id"] == color_id:
 			return str(c.get("name", color_id))
@@ -296,11 +270,20 @@ func _unit_color(id: String) -> Color:
 	return _color_of(colors[0]) if not colors.is_empty() else Color("#8c8c8c")
 
 
+## Text zu einer id aus der Tabelle (prefix + id), sonst die id selbst.
+func _tr(prefix: String, id: String) -> String:
+	var key := prefix + id
+	var text := Loc.t(key)
+	return id if text == key else text
+
+
 func _unit_name(id: String) -> String:
 	return str(rs.get_def(id).get("name", id))
 
 
 func _rarity_name(rarity: int) -> String:
+	if _tr("WS_RARITY_", str(rarity)) != str(rarity):
+		return _tr("WS_RARITY_", str(rarity))
 	var names: Array = rs.rules.get("rarities", [])
 	return str(names[rarity]) if rarity >= 0 and rarity < names.size() else ""
 
@@ -326,10 +309,10 @@ func _copies(id: String) -> int:
 # --- Texte zu Einheiten ---
 
 func ability_text(a: Dictionary) -> String:
-	var trig: String = TRIGGER_TEXT.get(a.get("trigger", ""), a.get("trigger", ""))
+	var trig := _tr("WS_TRIG_", str(a.get("trigger", "")))
 	if a.get("trigger", "") == "avenge":
 		trig += " (%d)" % int(a.get("count", 1))
-	var tgt: String = TARGET_TEXT.get(a.get("target", "self"), a.get("target", ""))
+	var tgt := _tr("WS_TGT_", str(a.get("target", "self")))
 	var only := ""
 	if a.get("only") is Dictionary and a["only"].has("color"):
 		only = " (" + _color_name(str(a["only"]["color"])) + ")"
@@ -342,32 +325,34 @@ func ability_text(a: Dictionary) -> String:
 		"buff":
 			var parts: Array[String] = []
 			if int(a.get("atk", 0)) != 0:
-				parts.append("+%d Angriff" % int(a["atk"]))
+				parts.append(Loc.t("WS_AB_ATK", {"n": int(a["atk"])}))
 			if int(a.get("hp", 0)) != 0:
-				parts.append("+%d Leben" % int(a["hp"]))
+				parts.append(Loc.t("WS_AB_HP", {"n": int(a["hp"])}))
 			if a.get("value_from", "") != "":
-				parts.append("+Angriff aus " + str(a["value_from"]))
+				parts.append(Loc.t("WS_AB_FROM", {"from": str(a["value_from"])}))
 			if a.get("keyword", "") != "":
-				parts.append(KW_SHORT.get(a["keyword"], a["keyword"]))
-			what = "%s%s: %s%s" % [tgt, only, ", ".join(parts), " (dauerhaft)" if a.get("permanent", false) else ""]
+				parts.append(_tr("WS_KW_", str(a["keyword"])))
+			what = "%s%s: %s%s" % [tgt, only, ", ".join(parts), Loc.t("WS_AB_PERM") if a.get("permanent", false) else ""]
 		"give_keyword":
-			what = "%s%s bekommt %s" % [tgt, only, "zufälliges Schlüsselwort" if a.get("keyword") == "random" else KW_SHORT.get(a.get("keyword", ""), a.get("keyword", ""))]
+			var kw := Loc.t("WS_AB_RANDOM_KW") if a.get("keyword") == "random" else _tr("WS_KW_", str(a.get("keyword", "")))
+			what = Loc.t("WS_AB_GETS", {"target": tgt + only, "kw": kw})
 		"remove_keyword":
-			what = "%s verliert %s" % [tgt, ", ".join(a.get("keywords", []))]
+			var lost: Array = a.get("keywords", []).map(func(k: String) -> String: return _tr("WS_KW_", k))
+			what = Loc.t("WS_AB_LOSES", {"target": tgt, "kw": ", ".join(lost)})
 		"summon":
-			what = "beschwört %s" % ("Einheit mit Todesröcheln" if a.get("random", "") == "deathrattle" else _unit_name(a.get("token", "")))
+			what = Loc.t("WS_AB_SUMMON", {"unit": Loc.t("WS_AB_DR_UNIT") if a.get("random", "") == "deathrattle" else _unit_name(a.get("token", ""))})
 		"damage":
-			what = "%d%s Schaden an %s%s" % [int(a.get("value", 0)), " + " + str(a["value_from"]) if a.get("value_from", "") != "" else "", tgt, only]
+			what = Loc.t("WS_AB_DAMAGE", {"n": int(a.get("value", 0)), "extra": " + " + str(a["value_from"]) if a.get("value_from", "") != "" else "", "target": tgt + only})
 		"destroy":
-			what = "vernichtet " + tgt
+			what = Loc.t("WS_AB_DESTROY", {"target": tgt})
 		"attack_now":
-			what = "greift sofort an"
+			what = Loc.t("WS_AB_ATTACK_NOW")
 		"trigger_ability":
-			what = "löst %s von %s aus" % [TRIGGER_TEXT.get(a.get("ability_trigger", ""), ""), tgt]
+			what = Loc.t("WS_AB_TRIGGER", {"trigger": _tr("WS_TRIG_", str(a.get("ability_trigger", ""))), "target": tgt})
 		"gold":
-			what = "+%d Gold" % int(a.get("value", 0))
+			what = Loc.t("WS_AB_GOLD", {"n": int(a.get("value", 0))})
 		"free_reroll":
-			what = "+%d Gratis-Würfe" % int(a.get("value", 0))
+			what = Loc.t("WS_AB_FREE", {"n": int(a.get("value", 0))})
 		_:
 			what = str(a.get("effect", ""))
 	return "[color=%s]%s%s:[/color] %s%s" % [COLOR_ATK, trig, when, what, times]
@@ -379,24 +364,58 @@ func _show_unit_card(id: String, level: int, unit: Dictionary = {}) -> void:
 	var stats := rs.level_stats(id, level)
 	var values := _stats({"id": id, "level": level, "atk_bonus": unit.get("atk_bonus", 0), "hp_bonus": unit.get("hp_bonus", 0)})
 	var kws: Array = stats.get("keywords", []) + unit.get("keywords", [])
-	var lines: Array[String] = ["[color=%s]%d Angriff[/color]   [color=%s]%d Leben[/color]" % [COLOR_ATK, values.x, COLOR_HP, values.y]]
+	var lines: Array[String] = ["[color=%s]%s[/color]   [color=%s]%s[/color]" % [COLOR_ATK, Loc.t("WS_ATK", {"n": values.x}), COLOR_HP, Loc.t("WS_HP", {"n": values.y})]]
 	for p: String in stats.get("passives", []):
-		lines.append(PASSIVE_TEXT.get(p, p))
+		lines.append(_tr("WS_PAS_", p))
 	for a: Dictionary in stats.get("abilities", []):
 		lines.append(ability_text(a))
 	for k: String in kws:
-		var text: String = KW_LONG.get(k, k)
+		var text := _tr("WS_KWL_", k)
 		var split := text.find(":")
 		lines.append("[color=%s]%s[/color]%s" % [COLOR_TERM, text.substr(0, split), text.substr(split)] if split > 0 else text)
 	var ref: Variant = def.get("ref")
 	if ref is Dictionary:
-		lines.append("Vorlage: %s (BG Stufe %s)" % [ref.get("bg_name", ""), ref.get("bg_tier", "")])
+		lines.append(Loc.t("WS_TEMPLATE", {"name": ref.get("bg_name", ""), "tier": ref.get("bg_tier", "")}))
 	_card.show_text(_unit_name(id), "\n".join(lines), _texture(id))
 	var colors: Array = def.get("colors", [])
-	var sub := "%s, Stufe %d, %s" % [_rarity_name(int(def.get("rarity", 0))), level, ", ".join(colors.map(_color_name))]
+	var sub := Loc.t("WS_SUB", {"rarity": _rarity_name(int(def.get("rarity", 0))), "level": level, "colors": ", ".join(colors.map(_color_name))})
 	if rs.is_token(id):
-		sub = "Spielstein, Stufe %d" % level
+		sub = Loc.t("WS_SUB_TOKEN", {"level": level})
 	_card.set_subtitle(sub)
+
+
+# --- Speichern ---
+
+## Nur im normalen Spiel: nach jeder Aktion speichern, am Run-Ende löschen. Der Testbereich speichert nicht.
+func _save_run() -> void:
+	if Session.workshop_test or run == null:
+		return
+	if run.is_over():
+		Session.clear_workshop_save()
+		return
+	var file := FileAccess.open(Session.WORKSHOP_SAVE, FileAccess.WRITE)
+	if file != null:
+		file.store_string(JSON.stringify(run.to_save()))
+
+
+func _load_run() -> bool:
+	var data: Variant = GameData.load_json(Session.WORKSHOP_SAVE) if Session.has_workshop_save() else null
+	var loaded: WsRun = WsRun.from_save(rs, data) if data is Dictionary else null
+	if loaded == null:
+		Session.clear_workshop_save()
+		return false
+	run = loaded
+	run.trace = true
+	mode = str(data.get("mode", "bg"))
+	difficulty = run.difficulty
+	return true
+
+
+func _on_menu() -> void:
+	if Session.workshop_test:
+		_show_start()
+	else:
+		Session.goto(Session.TITLE_SCENE)
 
 
 # --- Start und Ende ---
@@ -408,22 +427,38 @@ func _show_start() -> void:
 	var box := _fill(_vbox(12)) as VBoxContainer
 	box.alignment = BoxContainer.ALIGNMENT_CENTER
 	page.add_child(box)
-	box.add_child(_title_label("INKLITE WORKSHOP"))
+	box.add_child(_title_label(Loc.t("WS_TITLE" if Session.workshop_test else "WS_GAME_TITLE")))
+	if Session.workshop_test:
+		_add_ruleset_info(box)
+	_add_difficulty(box)
+	if Session.workshop_test:
+		box.add_child(_button(Loc.t("WS_NEW_BG"), &"PrimaryButton", _new_run.bind("bg"), 56, 20))
+		box.add_child(_button(Loc.t("WS_NEW_GRID"), &"", _new_run.bind("grid"), 52, 16))
+		box.add_child(_button(Loc.t("WS_BACK_TO_GAME"), &"", func() -> void: Session.goto(Session.TITLE_SCENE), 48, 14))
+	else:
+		box.add_child(_button(Loc.t("WS_START_RUN"), &"PrimaryButton", _new_run.bind("bg"), 56, 20))
+		box.add_child(_button(Loc.t("BTN_BACK"), &"", func() -> void: Session.goto(Session.TITLE_SCENE), 48, 14))
+
+
+func _add_ruleset_info(box: VBoxContainer) -> void:
 	var meta: Dictionary = rs.section("meta")
-	var info := _panel("Regelsatz", &"HeaderBlue")
-	var text := "%s (Version %s): %d Einheiten, %d Geisterteams.\nAntippen zeigt Infos, Ziehen kauft und stellt um." % [
-		meta.get("name", ""), meta.get("version", "?"), rs.units.size(), rs.ghosts.size()]
+	var info := _panel(Loc.t("WS_RULESET"), &"HeaderBlue")
+	var text := Loc.t("WS_RULESET_INFO", {"name": meta.get("name", ""), "version": meta.get("version", "?"),
+		"units": rs.units.size(), "ghosts": rs.ghosts.size()})
 	if rs.ghosts.is_empty():
-		text += "\nNoch keine Geisterteams: Im Editor erst eine Simulation laufen lassen."
+		text += "\n" + Loc.t("WS_NO_GHOSTS")
 	info.add_child(_label(text, 11, &"PanelLabel"))
 	box.add_child(info.get_parent())
+
+
+func _add_difficulty(box: VBoxContainer) -> void:
 	var levels: Array = rs.section("run").get("difficulties", [])
 	if levels.is_empty():
 		difficulty = ""
 	else:
 		if not levels.any(func(d: Dictionary) -> bool: return d["id"] == difficulty):
 			difficulty = levels[mini(1, levels.size() - 1)]["id"]
-		var choice := _panel("Schwierigkeit", &"HeaderYellow")
+		var choice := _panel(Loc.t("WS_DIFFICULTY"), &"HeaderYellow")
 		var row := _hbox(6)
 		choice.add_child(row)
 		var hint := _label("", 11, &"PanelLabel")
@@ -445,9 +480,6 @@ func _show_start() -> void:
 		choice.add_child(hint)
 		_mark_difficulty(buttons, levels, hint)
 		box.add_child(choice.get_parent())
-	box.add_child(_button("Neuer Run, BG-Kampf", &"PrimaryButton", _new_run.bind("bg"), 56, 20))
-	box.add_child(_button("Neuer Run, Raster-Kampf", &"", _new_run.bind("grid"), 52, 16))
-	box.add_child(_button("Zurück zum Spiel", &"", func() -> void: Session.goto(Session.TITLE_SCENE), 48, 14))
 
 
 ## Gewählte Stufe rot hervorheben, darunter ein kurzer Satz dazu.
@@ -456,7 +488,9 @@ func _mark_difficulty(buttons: Array[Button], levels: Array, hint: Label) -> voi
 		var selected: bool = levels[i]["id"] == difficulty
 		buttons[i].theme_type_variation = &"PrimaryButton" if selected else &""
 		if selected:
-			hint.text = DIFFICULTY_HINTS.get(difficulty, "Gegnerstärke %d bis %d." % [int(levels[i].get("min", 0)), int(levels[i].get("max", 100))])
+			hint.text = _tr("WS_DIFF_", difficulty)
+			if hint.text == difficulty:
+				hint.text = Loc.t("WS_DIFF_RANGE", {"min": int(levels[i].get("min", 0)), "max": int(levels[i].get("max", 100))})
 
 
 func _difficulty_name(id: String) -> String:
@@ -481,13 +515,12 @@ func _show_end() -> void:
 	var box := _fill(_vbox(12)) as VBoxContainer
 	box.alignment = BoxContainer.ALIGNMENT_CENTER
 	page.add_child(box)
-	box.add_child(_title_label("Gewonnen!" if run.is_victory() else "Run vorbei"))
-	var summary := _panel("Ergebnis", &"HeaderPink" if not run.is_victory() else &"HeaderGreen")
-	summary.add_child(_label("%s\n%d Siege, %d Niederlagen, %d Unentschieden in %d Tagen." % [
-		"Zehn Siege, der Run ist gewonnen." if run.is_victory() else "Keine Leben mehr.",
-		run.wins, run.losses, run.draws, run.day - 1], 13, &"PanelLabel"))
+	box.add_child(_title_label(Loc.t("WS_WON_TITLE" if run.is_victory() else "WS_OVER_TITLE")))
+	var summary := _panel(Loc.t("WS_RESULT"), &"HeaderPink" if not run.is_victory() else &"HeaderGreen")
+	summary.add_child(_label(Loc.t("WS_WON_TEXT" if run.is_victory() else "WS_LOST_TEXT") + "\n" + Loc.t("WS_SUMMARY", {
+		"wins": run.wins, "losses": run.losses, "draws": run.draws, "days": run.day - 1}), 13, &"PanelLabel"))
 	if run.difficulty != "":
-		summary.add_child(_label("Schwierigkeit: " + _difficulty_name(run.difficulty), 12, &"PanelLabel"))
+		summary.add_child(_label(Loc.t("WS_DIFFICULTY_LINE", {"name": _difficulty_name(run.difficulty)}), 12, &"PanelLabel"))
 	var team := _hbox(4)
 	team.alignment = BoxContainer.ALIGNMENT_CENTER
 	for unit: Dictionary in run.team_units():
@@ -498,7 +531,9 @@ func _show_end() -> void:
 		team.add_child(image)
 	summary.add_child(team)
 	box.add_child(summary.get_parent())
-	box.add_child(_button("Neuer Run", &"PrimaryButton", _show_start, 56, 20))
+	box.add_child(_button(Loc.t("WS_NEW_RUN"), &"PrimaryButton", _show_start, 56, 20))
+	if not Session.workshop_test:
+		box.add_child(_button(Loc.t("BTN_MENU"), &"", func() -> void: Session.goto(Session.TITLE_SCENE), 48, 14))
 
 
 # --- Shop ---
@@ -537,9 +572,9 @@ func _show_shop() -> void:
 	_gold_button.add_theme_constant_override("h_separation", 6)
 	info_row.add_child(_gold_button)
 
-	var team := _panel("MEIN TEAM", &"HeaderPink")
+	var team := _panel(Loc.t("SHOP_TEAM").to_upper(), &"HeaderPink")
 	layout.add_child(team.get_parent())
-	var caption := _label("Platz 1 bis 6 greifen der Reihe nach an" if mode == "bg" else "obere Reihe: vorne, wird zuerst getroffen", 10, &"PanelLabel")
+	var caption := _label(Loc.t("WS_CAPTION_BG" if mode == "bg" else "WS_CAPTION_GRID"), 10, &"PanelLabel")
 	caption.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	team.add_child(caption)
 	var grid := GridContainer.new()
@@ -551,7 +586,7 @@ func _show_shop() -> void:
 	for i in run.team.size():
 		_team_cells.append(_make_cell(grid, WsRun.TEAM, i, TEAM_CELL))
 
-	var bench := _panel("BANK", &"HeaderYellow")
+	var bench := _panel(Loc.t("WS_BENCH").to_upper(), &"HeaderYellow")
 	layout.add_child(bench.get_parent())
 	var bench_row := _hbox(4)
 	bench_row.alignment = BoxContainer.ALIGNMENT_CENTER
@@ -586,7 +621,7 @@ func _show_shop() -> void:
 	_shop_area.add_child(buttons)
 	_reroll = _button("", &"YellowButton", _on_reroll, 54, 15)
 	_lock = _button("", &"BlueButton", _on_lock, 54, 15)
-	_fight = _button("Kampf!", &"PrimaryButton", _on_fight, 54, 20)
+	_fight = _button(Loc.t("SHOP_FIGHT"), &"PrimaryButton", _on_fight, 54, 20)
 	for b in [_reroll, _lock, _fight]:
 		b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		buttons.add_child(b)
@@ -627,7 +662,8 @@ func _make_cell(parent: Control, loc: String, index: int, cell_size: Vector2) ->
 
 
 func _refresh_shop() -> void:
-	_hud.show_values(run.lives, "Tag %d" % run.day, run.wins, _wins_needed())
+	_save_run()
+	_hud.show_values(run.lives, Loc.t("WS_DAY", {"n": run.day}), run.wins, _wins_needed())
 	_gold_button.text = str(run.gold)
 	_show_odds()
 	for loc in [WsRun.TEAM, WsRun.BENCH]:
@@ -655,12 +691,12 @@ func _refresh_shop() -> void:
 		card.set_merge_progress(_copies(offer["id"]), _merge_needed())
 		card.set_selected(_selected == {"kind": "offer", "index": i})
 	if run.free_rerolls > 0:
-		_reroll.text = "Gratis (%d)" % run.free_rerolls
+		_reroll.text = Loc.t("WS_FREE", {"n": run.free_rerolls})
 		_reroll.disabled = false
 	else:
-		_reroll.text = "Würfeln (%d)" % run.reroll_cost()
+		_reroll.text = Loc.t("WS_REROLL", {"n": run.reroll_cost()})
 		_reroll.disabled = run.gold < run.reroll_cost()
-	_lock.text = "Entsperren" if run.locked else "Sperren"
+	_lock.text = Loc.t("WS_UNLOCK" if run.locked else "WS_LOCK")
 	_fight.disabled = run.team_units().is_empty()
 
 
@@ -669,7 +705,7 @@ func _show_odds() -> void:
 	var total := 0
 	for w: Variant in weights:
 		total += int(w)
-	var parts: Array[String] = ["Rang %d" % run.rank()]
+	var parts: Array[String] = [Loc.t("SHOP_RANK", {"n": run.rank()})]
 	for rarity in weights.size():
 		var percent := roundi(100.0 * int(weights[rarity]) / maxi(total, 1))
 		parts.append("[color=%s]%d%%[/color]" % [RARITY_COLORS[mini(rarity, RARITY_COLORS.size() - 1)], percent])
@@ -693,15 +729,15 @@ func _tap_offer(index: int) -> void:
 	_selected = {"kind": "offer", "index": index}
 	_show_unit_card(offer["id"], 1)
 	var cost := int(offer["cost"])
-	_card.set_action("Kaufen (%d Gold)" % cost, run.can_buy(index))
+	_card.set_action(Loc.t("CARD_BUY", {"cost": cost}), run.can_buy(index))
 	if run.gold < cost:
-		_card.set_note("Dafür reicht dein Gold nicht.")
+		_card.set_note(Loc.t("WS_NOTE_NO_GOLD"))
 	elif not run.can_buy(index):
-		_card.set_note("Team und Bank sind voll. Verkaufe erst eine Einheit.")
+		_card.set_note(Loc.t("WS_NOTE_FULL"))
 	elif _copies(offer["id"]) > 0:
-		_card.set_note("Du hast %d davon auf Stufe 1. Bei %d verschmelzen sie." % [_copies(offer["id"]), _merge_needed()])
+		_card.set_note(Loc.t("WS_NOTE_COPIES", {"n": _copies(offer["id"]), "max": _merge_needed()}))
 	else:
-		_card.set_note("Tipp: Ziehe die Karte direkt auf einen Platz.")
+		_card.set_note(Loc.t("WS_NOTE_DRAG"))
 	Audio.play("click")
 	_refresh_shop()
 
@@ -713,8 +749,8 @@ func _tap_owned(loc: String, slot: int) -> void:
 	_selected = {"kind": loc, "index": slot}
 	_show_unit_card(unit["id"], int(unit["level"]), unit)
 	var value := 0 if rs.is_token(unit["id"]) else rs.sell_value(unit["id"], int(unit["level"]))
-	_card.set_action("Verkaufen (+%d)" % value)
-	_card.set_note("Ziehen stellt um, auch zwischen Team und Bank. Nur das Team kämpft.")
+	_card.set_action(Loc.t("WS_SELL", {"n": value}))
+	_card.set_note(Loc.t("WS_NOTE_OWNED"))
 	Audio.play("click")
 	_refresh_shop()
 
@@ -765,7 +801,7 @@ func _buy(index: int, loc: String = "", slot: int = -1) -> void:
 					var cell: UnitCell = (_team_cells if loc_name == WsRun.TEAM else _bench_cells)[i]
 					cell.flash(FLASH_MERGE, 0.5)
 					_show_unit_card(slots[i]["id"], merged, slots[i])
-					_card.set_note("Verschmolzen zu Stufe %d!" % merged)
+					_card.set_note(Loc.t("WS_MERGED", {"n": merged}))
 		return
 	Audio.play("buy")
 	Haptics.pulse(Haptics.TAP)
@@ -780,7 +816,7 @@ func _sell(loc: String, slot: int) -> void:
 		return
 	Audio.play("sell")
 	_selected = {}
-	_card.show_text(_unit_name(unit["id"]), "Verkauft für %d Gold." % int(result["value"]), _texture(unit["id"]))
+	_card.show_text(_unit_name(unit["id"]), Loc.t("WS_SOLD", {"n": int(result["value"])}), _texture(unit["id"]))
 	_refresh_shop()
 
 
@@ -804,8 +840,7 @@ func _on_reroll() -> void:
 func _on_lock() -> void:
 	run.toggle_lock()
 	Audio.play("click")
-	_card.show_text("Shop gesperrt" if run.locked else "Shop entsperrt",
-		"Die Angebote bleiben bis morgen liegen. Würfeln hebt die Sperre auf." if run.locked else "Morgen gibt es neue Angebote.")
+	_card.show_text(Loc.t("WS_LOCKED_T" if run.locked else "WS_UNLOCKED_T"), Loc.t("WS_LOCKED_INFO" if run.locked else "WS_UNLOCKED_INFO"))
 	_refresh_shop()
 
 
@@ -813,7 +848,9 @@ func _on_fight() -> void:
 	if run.team_units().is_empty():
 		return
 	Audio.play("click")
-	_show_battle(run.fight())
+	var battle := run.fight()
+	_save_run()
+	_show_battle(battle)
 
 
 func _notification(what: int) -> void:
@@ -834,7 +871,7 @@ func _notification(what: int) -> void:
 			var unit: Variant = run.slots_of(str(data.get("loc", "")))[int(data["slot"])]
 			if unit != null:
 				var value := 0 if rs.is_token(unit["id"]) else rs.sell_value(unit["id"], int(unit["level"]))
-				_sell_label.text = "Hierher ziehen: verkaufen (+%d)" % value
+				_sell_label.text = Loc.t("WS_SELL_DROP", {"n": value})
 				_sell_zone.visible = true
 				_shop_area.modulate.a = 0.0
 	elif what == NOTIFICATION_DRAG_END:
@@ -855,33 +892,34 @@ func _on_hud_info(topic: String) -> void:
 			var losses: Array = rs.section("run").get("life_loss_by_day", [1])
 			var parts: Array[String] = []
 			for i in losses.size():
-				parts.append(("Tag %d" % (i + 1) if i < losses.size() - 1 else "ab Tag %d" % (i + 1)) + ": " + str(losses[i]))
-			var text := "Eine Niederlage kostet je nach Tag Leben (%s). Bei 0 ist der Run vorbei." % ", ".join(parts)
+				parts.append(Loc.t("WS_LIVES_DAY" if i < losses.size() - 1 else "WS_LIVES_FROM", {"n": i + 1, "v": losses[i]}))
+			var text := Loc.t("WS_LIVES_INFO", {"list": ", ".join(parts)})
 			if rs.section("run").get("second_chance", false):
-				text += " Einmal pro Run gibt es eine zweite Chance mit 1 Leben."
-			_card.show_text("Leben", text)
+				text += " " + Loc.t("WS_SECOND_CHANCE")
+			_card.show_text(Loc.t("HUD_LIVES_T"), text)
 		"WINS":
 			var draw: String = rs.section("run").get("draw_result", "draw")
-			_card.show_text("Siege", "Mit %d Siegen gewinnst du den Run.%s" % [_wins_needed(),
-				" Ein Unentschieden zählt als Sieg." if draw == "win" else (" Ein Unentschieden zählt als Niederlage." if draw == "loss" else "")])
+			var text := Loc.t("WS_WINS_INFO", {"n": _wins_needed()})
+			if draw in ["win", "loss"]:
+				text += " " + Loc.t("WS_DRAW_WIN" if draw == "win" else "WS_DRAW_LOSS")
+			_card.show_text(Loc.t("HUD_WINS_T"), text)
 		"ROUND":
-			_card.show_text("Tag %d" % run.day, "Jeder Tag ist eine Shop-Phase und ein Kampf. Mit jedem Tag steigt der Shop-Rang, dann kommen seltenere Einheiten. Heute bist du auf Rang %d." % run.rank())
+			_card.show_text(Loc.t("WS_DAY", {"n": run.day}), Loc.t("WS_ROUND_INFO", {"n": run.rank()}))
 		"GOLD":
 			var carries: bool = rs.section("economy").get("gold_carries_over", true)
-			_card.show_text("Gold", "Du hast %d Gold. Jeden Tag gibt es neues Gold, Würfeln kostet %d.%s" % [run.gold, run.reroll_cost(),
-				" Übriges Gold bleibt für morgen." if carries else " Übriges Gold verfällt am Tagesende."])
+			_card.show_text(Loc.t("HUD_GOLD_T"), Loc.t("WS_GOLD_INFO", {"gold": run.gold, "cost": run.reroll_cost()}) + " " + Loc.t("WS_GOLD_KEEP" if carries else "WS_GOLD_LOSE"))
 		"ODDS":
 			var weights: Array = rs.rarity_weights(run.rank())
 			var lines: Array[String] = []
 			for rarity in weights.size():
 				lines.append("[color=%s]%s[/color]: %d" % [RARITY_COLORS[mini(rarity, RARITY_COLORS.size() - 1)], _rarity_name(rarity), int(weights[rarity])])
-			_card.show_text("Chancen auf Rang %d" % run.rank(), "So wahrscheinlich ist jede Seltenheit pro Angebot (Gewichte):\n" + "\n".join(lines))
+			_card.show_text(Loc.t("WS_ODDS_T", {"n": run.rank()}), Loc.t("WS_ODDS_INFO") + "\n" + "\n".join(lines))
 	if _shop_cards.size() > 0 and is_instance_valid(_shop_cards[0]):
 		_refresh_shop()
 
 
 func _show_help() -> void:
-	_card.show_text("So geht's", "Kaufen: Angebot antippen oder direkt auf einen Platz im Team oder auf der Bank ziehen. Drei gleiche verschmelzen zur nächsten Stufe.\nUmstellen: Einheit auf einen anderen Platz ziehen. Nur das Team kämpft, die Bank wartet.\nSperren: Die Angebote bleiben bis morgen.\nKampf!: Dein Team kämpft gegen ein gespeichertes Geisterteam.")
+	_card.show_text(Loc.t("WS_HELP_T"), Loc.t("WS_HELP"))
 
 
 # --- Kampf ---
@@ -902,12 +940,12 @@ func _show_battle(battle: Dictionary) -> void:
 	page.add_child(layout)
 	var header := _hbox(6)
 	layout.add_child(header)
-	var title := _label("Tag %d" % int(battle["day"]), 18)
+	var title := _label(Loc.t("WS_DAY", {"n": int(battle["day"])}), 18)
 	title.add_theme_color_override("font_color", Color(0.92549, 0.827451, 0.576471))
 	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	header.add_child(title)
 	var strength := int(battle.get("ghost_strength", -1))
-	var ghost_text := "Gegnerstärke %d" % strength if strength >= 0 else "Gegner: %s" % battle.get("ghost_id", "?")
+	var ghost_text := Loc.t("WS_ENEMY_STRENGTH", {"n": strength}) if strength >= 0 else Loc.t("WS_ENEMY_ID", {"id": battle.get("ghost_id", "?")})
 	if str(battle.get("difficulty", "")) != "":
 		ghost_text += " (%s)" % _difficulty_name(battle["difficulty"])
 	var ghost := _label(ghost_text, 11)
@@ -918,7 +956,7 @@ func _show_battle(battle: Dictionary) -> void:
 
 	var holders: Array[Control] = []
 	for side in [1, 0]:
-		var caption := _label("Gegner" if side == 1 else "Dein Team", 12)
+		var caption := _label(Loc.t("WS_ENEMY" if side == 1 else "WS_YOUR_TEAM"), 12)
 		caption.add_theme_color_override("font_color", Color(0.678431, 0.647059, 0.768627))
 		caption.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		var holder := CenterContainer.new()
@@ -940,7 +978,7 @@ func _show_battle(battle: Dictionary) -> void:
 	layout.add_child(result)
 	var controls := _hbox(8)
 	layout.add_child(controls)
-	var skip := _button("Überspringen", &"", func() -> void: _skip = true, 52, 16)
+	var skip := _button(Loc.t("WS_SKIP"), &"", func() -> void: _skip = true, 52, 16)
 	skip.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	var speed := _button("%dx" % int(SPEEDS[_speed_index]), &"", Callable(), 52, 16)
 	speed.custom_minimum_size.x = 72
@@ -1149,11 +1187,11 @@ func _purge_dead() -> void:
 
 func _finish_battle(battle: Dictionary, result_label: Label, controls: HBoxContainer) -> void:
 	var outcome: String = battle["result"]
-	var text: String = {"win": "Sieg!", "loss": "Niederlage", "draw": "Unentschieden"}.get(outcome, outcome)
+	var text := Loc.t({"win": "WS_WIN", "loss": "WS_LOSS"}.get(outcome, "WS_DRAW"))
 	if int(battle.get("winner", 0)) == WsCombat.DRAW and outcome != "draw":
-		text = "Unentschieden,\nzählt als " + ("Sieg" if outcome == "win" else "Niederlage")
+		text = Loc.t("WS_DRAW_AS_WIN" if outcome == "win" else "WS_DRAW_AS_LOSS")
 	if int(battle.get("lost_lives", 0)) > 0:
-		text += "\n-%d Leben" % int(battle["lost_lives"])
+		text += "\n" + Loc.t("WS_LIVES_LOST", {"n": int(battle["lost_lives"])})
 	result_label.text = text
 	result_label.add_theme_color_override("font_color", COLOR_WIN if outcome == "win" else (COLOR_LOSS if outcome == "loss" else Color.WHITE))
 	if run.is_over():
@@ -1165,7 +1203,7 @@ func _finish_battle(battle: Dictionary, result_label: Label, controls: HBoxConta
 		Haptics.pulse(Haptics.WIN)
 	for child in controls.get_children():
 		child.queue_free()
-	var next := _button("Weiter", &"PrimaryButton", _after_battle, 56, 20)
+	var next := _button(Loc.t("WS_NEXT"), &"PrimaryButton", _after_battle, 56, 20)
 	next.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	controls.add_child(next)
 
